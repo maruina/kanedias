@@ -34,6 +34,7 @@ def vagrant_get_ssh_config(vagrant_dir):
     with lcd(vagrant_dir):
         result = dict(line.split() for line in local('vagrant ssh-config', capture=True).splitlines())
         env.hosts = ['%s:%s' % (result['HostName'], result['Port'])]
+        env.roledefs['vagrant'] = [host for host in env.hosts if '127.0.0.1' in host]
         env.user = result['User']
         env.key_filename = result['IdentityFile']
 
