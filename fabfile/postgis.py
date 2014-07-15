@@ -3,7 +3,7 @@ from fabric.api import task, sudo, get, roles
 from fabric.context_managers import hide
 
 
-@roles('vagrant', 'db')
+@roles('vagrant')
 @task
 def postgis_install():
     source_list = "/etc/apt/sources.list"
@@ -20,5 +20,4 @@ def postgis_install():
     else:
         with hide('stdout'):
             sudo('apt-get update')
-
-        sudo('apt-get install -y --force-yes postgresql-9.3 postgresql-9.3-postgis postgresql-contrib')
+            sudo('apt-get install -y --force-yes postgresql-9.3 postgresql-9.3-postgis postgresql-contrib')
