@@ -2,6 +2,7 @@ from fabric.api import task, execute, env
 from vagrant import vagrant_up, vagrant_get_ssh_config, vagrant_destroy
 from ubuntu import apt_update
 from postgis import postgis_install
+from ntp import ntp_puppet
 from configobj import ConfigObj
 import os
 import sys
