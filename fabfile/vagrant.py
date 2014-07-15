@@ -7,9 +7,8 @@ def vagrant_up(vagrant_dir):
     with lcd(vagrant_dir), settings(warn_only=True):
         vagrant_status = [line for line in local('vagrant status', capture=True).splitlines()]
         if any('running' in s for s in vagrant_status):
-            print 'Vagrant already running'
+            pass
         else:
-            print 'Activating Vagrant'
             local('vagrant up')
 
 
@@ -18,9 +17,8 @@ def vagrant_halt(vagrant_dir):
     with lcd(vagrant_dir), settings(warn_only=True):
         vagrant_status = [line for line in local('vagrant status', capture=True).splitlines()]
         if any('poweroff' in s for s in vagrant_status):
-            print 'Vagrant already stopped'
+            pass
         else:
-            print 'Stopping Vagrant'
             local('vagrant halt')
 
 
@@ -28,8 +26,7 @@ def vagrant_halt(vagrant_dir):
 def vagrant_destroy(vagrant_dir):
     execute(vagrant_halt, vagrant_dir)
     with lcd(vagrant_dir), settings(warn_only=True):
-        local('vagrant destroy')
-        print 'Vagrant machine destroyed'
+        local('vagrant destroy --force')
 
 
 @task
