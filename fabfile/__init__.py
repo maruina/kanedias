@@ -26,4 +26,5 @@ def vagrant_deploy():
     #execute(vagrant_up, vagrant_dir)
     execute(vagrant_get_ssh_config, vagrant_dir)
     #execute(apt_update)
-    execute(postgis_install)
+    execute(ntp_puppet)
+    #execute(postgis_install)

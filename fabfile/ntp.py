@@ -20,4 +20,6 @@ def ntp_puppet():
         fw.write(output)
     fw.close()
 
-    # Caricare il file ntp.pp sulla macchina remota ed eseguire il comando con puppet
+    put(output_file, '/tmp/provisioning/')
+
+    
