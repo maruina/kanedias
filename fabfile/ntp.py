@@ -1,5 +1,6 @@
 from fabric.api import local, task, run, env, sudo, get, put
 from jinja2 import Environment, FileSystemLoader
+from puppet import puppet_install_module
 import os
 
 
@@ -9,6 +10,8 @@ def ntp_puppet():
         'ntp_server_1': 'ntp1.inrim.it',
         'ntp_server_2': 'ntp2.inrim.it'
     }
+    module_name = 'puppetlabs-ntp'
+    puppet_install_module(module_name)
 
     ntp_env = Environment(loader=FileSystemLoader('templates'))
     template = ntp_env.get_template('ntp.html')
@@ -20,6 +23,7 @@ def ntp_puppet():
         fw.write(output)
     fw.close()
 
-    put(output_file, '/tmp/provisioning/')
+    put(output_file, '/tmp/')
 
-    
+    sudo('puppet apply /tmp/ntp.pp')
+

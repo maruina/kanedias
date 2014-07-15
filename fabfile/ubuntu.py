@@ -9,6 +9,6 @@ from fabric.context_managers import lcd, hide
 def apt_update():
     with hide('stdout'):
         sudo('apt-get update')
-        sudo('DEBIAN_FRONTEND=noninteractive apt-get -y -o Dpkg::Options::="--force-confdef" -o \
-        Dpkg::Options::="--force-confold" upgrade')
-    reboot()
+        sudo('export DEBIAN_FRONTEND=noninteractive')
+        sudo('apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade')
+        reboot()
