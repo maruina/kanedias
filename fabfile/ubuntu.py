@@ -11,4 +11,4 @@ def apt_update():
         sudo('apt-get update')
         sudo('export DEBIAN_FRONTEND=noninteractive')
         sudo('apt-get -y -o Dpkg::Options::="--force-confdef" -o Dpkg::Options::="--force-confold" upgrade')
-        reboot()
+    reboot()
