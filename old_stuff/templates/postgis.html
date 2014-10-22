@@ -1,0 +1,30 @@
+class { 'postgresql::globals':
+  encoding => 'UTF8',
+  postgis_version  => 2.1,
+  version  => 9.3
+}->
+class { 'postgresql::server':
+  ip_mask_deny_postgres_user => '0.0.0.0/32',
+  ip_mask_allow_all_users    => '0.0.0.0/0',
+  listen_addresses           => '*',
+  ipv4acls                   => ['local all all trust', 'host all all {{ vagrant_network }} trust'],
+  postgres_password          => '{{ db_admin_pass }}',
+}
+
+postgresql::server::role { 'vagrant':
+  password_hash => postgresql_password('vagrant', 'vagrant'),
+  superuser => true
+}
+
+{% for db_type in db_list %}
+postgresql::server::db { '{{ db_name + '-' + db_type }}':
+    user     => '{{ db_username }}',
+    password => postgresql_password('{{ db_username }}', '{{ db_password }}')
+}
+
+postgresql::server::database_grant { '{{ db_name + '-' + db_type }}':
+    privilege => 'ALL',
+    db        => '{{ db_name + '-' + db_type }}',
+    role      => 'vagrant',
+}
+{% endfor %}

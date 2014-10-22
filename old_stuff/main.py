@@ -1,8 +1,10 @@
-from configobj import ConfigObj
 import os
 import sys
+
+from configobj import ConfigObj
 from fabric.api import execute
-from fabfile import vagrant
+
+from old_stuff.fabfile import vagrant
 
 
 if __name__ == '__main__':
