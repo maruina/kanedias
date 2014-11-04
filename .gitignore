@@ -84,3 +84,4 @@ com_crashlytics_export_strings.xml
 
 # Kanedias files
 *.ini
+*.pem

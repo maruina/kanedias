@@ -1,8 +1,12 @@
 Fabric==1.9.0
 Jinja2==2.7.3
 MarkupSafe==0.23
+boto==2.33.0
 configobj==5.0.5
 ecdsa==0.11
+gnureadline==6.3.3
+ipython==2.3.0
+netaddr==0.7.12
 paramiko==1.14.0
 pycrypto==2.6.1
 python-digitalocean==0.7
