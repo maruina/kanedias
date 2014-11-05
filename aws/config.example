@@ -1,0 +1,6 @@
+[Credentials]
+aws_access_key_id = YOUR_AMAZON_KEY_ID
+aws_secret_access_key = YOR_AMAZON_ACCESS_KEY
+
+[Settings]
+region = YOUR_REGION

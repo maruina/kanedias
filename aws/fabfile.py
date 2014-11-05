@@ -3,41 +3,23 @@ import sys
 import math
 import boto.ec2
 import boto.vpc
-from boto.pyami.config import Config
 from boto.route53.connection import Route53Connection
 from fabric.colors import red, green
 from netaddr import IPNetwork
+from parameters import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, REGION
 
 
-def aws_load_credentials():
-    # Load the configuration
-    if os.path.exists('config.ini'):
-        boto_config = Config()
-        boto_config.load_credential_file('config.ini')
-        if boto_config.items('Credentials'):
-            aws_id = boto_config.get('Credentials', 'aws_access_key_id')
-            aws_key = boto_config.get('Credentials', 'aws_secret_access_key')
-        else:
-            print(red('Credentials section is missing, abort!'))
-            sys.exit(1)
-    else:
-        print(red('Configuration file missing, abort!'))
-        sys.exit(1)
-    return aws_id, aws_key
-
-
-def aws_create_hosted_zone(domain_name, caller_ref=None, comment=''):
-    aws_id, aws_key = aws_load_credentials()
+def aws_create_hosted_zone(domain, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, caller_ref=None, comment=''):
     route53 = Route53Connection(aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
 
     hosted_zones = route53.get_all_hosted_zones()['ListHostedZonesResponse']['HostedZones']
     for hosted_zone in hosted_zones:
-        if domain_name in hosted_zone['Name']:
+        if domain in hosted_zone['Name']:
             print(red('Error: hosted zone already exist'))
             sys.exit(1)
     else:
-        route53.create_hosted_zone(domain_name=domain_name, caller_ref=caller_ref, comment=comment)
-        print(green('Ok: Hosted zone {} created'.format(domain_name)))
+        route53.create_hosted_zone(domain_name=domain, caller_ref=caller_ref, comment=comment)
+        print(green('Ok: Hosted zone {} created'.format(domain)))
 
 
 def aws_ec2_run_instance(ami_id, key, instance_type=None, security_group=None):
@@ -76,15 +58,14 @@ def aws_check_vpc_exists(parameter, mode):
         sys.exit(1)
 
 
-def aws_create_vpc(cidr, tags=None, tenancy=None, dry_run=False):
-    aws_id, aws_key = aws_load_credentials()
+def aws_create_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION,
+                   tags=None, tenancy=None, dry_run=False):
 
     # Check if the VPC already exists
     if aws_check_vpc_exists(cidr, 'by_cidr'):
         print(red('Error, VPC already exists'))
     else:
-        aws_id, aws_key = aws_load_credentials()
-        conn = boto.vpc.connect_to_region('us-east-1', aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+        conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
         vpc = conn.create_vpc(cidr_block=cidr, instance_tenancy=tenancy, dry_run=dry_run)[0]
         print(green(vpc))
         if tags:
@@ -92,14 +73,13 @@ def aws_create_vpc(cidr, tags=None, tenancy=None, dry_run=False):
                 vpc.add_tag(tag)
 
 
-def aws_subnet_vpc(vpc_id):
+def aws_subnet_vpc(vpc_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Create the subnet for the VPC. The creation rule is: number of subnets = number of availability zones + a
     spare zone. For each subnet you have a private subnet and a public + spare subnet
     :param vpc_id: the VPC to subnet
     """
-    aws_id, aws_key = aws_load_credentials()
-    vpc_conn = boto.vpc.connect_to_region('us-east-1', aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpc = vpc_conn.get_all_vpcs(vpc_ids=vpc_id)[0]
 
     # Get all the availability zones from the region
@@ -133,15 +113,17 @@ def aws_subnet_vpc(vpc_id):
         subnet.add_tag('Name', 'Spare AZ ' + zone_string)
 
 
-def aws_add_tags(vpc_id):
-    aws_id, aws_key = aws_load_credentials()
-    conn = boto.vpc.connect_to_region('us-east-1', aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpc = conn.get_all_vpcs(vpc_ids=vpc_id)[0]
-
-    tags = {
-        'Name': 'Global network',
-        'Owner': 'ruio'
-    }
 
     for key, value in tags.iteritems():
         vpc.add_tag(key, value)
+
+
+def prova():
+    print AWS_ID
+    print AWS_KEY
+    print AWS_REGIONS
+    print AMI_LIST
+    print REGION

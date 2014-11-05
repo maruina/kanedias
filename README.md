@@ -1,4 +1,6 @@
 kanedias
 ========
 
-Create and manage machines with python
+Create and manage AWS with Python and Saltstack.
+
+Rename the config.example in config.ini and set your parameters
