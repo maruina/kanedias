@@ -1,7 +1,7 @@
 import os
 import sys
 from boto.pyami.config import Config
-from fabric.colors import red, green
+from fabric.colors import red
 
 # Load the configuration
 if os.path.exists('config.ini'):
@@ -65,4 +65,8 @@ AMI_LIST = {
             'eu-central-1': 'ami-643c0a79'
         }
     }
+}
+
+VPC_TAGS = {
+
 }

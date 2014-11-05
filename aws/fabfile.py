@@ -6,7 +6,7 @@ import boto.vpc
 from boto.route53.connection import Route53Connection
 from fabric.colors import red, green
 from netaddr import IPNetwork
-from parameters import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, REGION
+from settings import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, REGION
 
 
 def aws_create_hosted_zone(domain, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, caller_ref=None, comment=''):
@@ -22,40 +22,38 @@ def aws_create_hosted_zone(domain, aws_id=None or AWS_ID, aws_key=None or AWS_KE
         print(green('Ok: Hosted zone {} created'.format(domain)))
 
 
-def aws_ec2_run_instance(ami_id, key, instance_type=None, security_group=None):
-    if not os.path.exists(key):
-        print(red('Error, ssh key not found'))
-        sys.exit(1)
-    else:
-        aws_id, aws_key = aws_load_credentials()
-        conn = boto.ec2.connect_to_region('us-east-1', aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-        # Red Hat Enterprise 6.5: ami-11125e21 no-micro
-        # Ubuntu 12.04 LTS amd_64: ami-7d69244d
-        # CentOS 6.5 amd_64: ami-a9de9c99
-        conn.run_instances(ami_id, key_name=key)
+# def aws_ec2_run_instance(ami_id, key, instance_type=None, security_group=None):
+#     if not os.path.exists(key):
+#         print(red('Error, ssh key not found'))
+#         sys.exit(1)
+#     else:
+#         aws_id, aws_key = aws_load_credentials()
+#         conn = boto.ec2.connect_to_region('us-east-1', aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+#         # Red Hat Enterprise 6.5: ami-11125e21 no-micro
+#         # Ubuntu 12.04 LTS amd_64: ami-7d69244d
+#         # CentOS 6.5 amd_64: ami-a9de9c99
+#         conn.run_instances(ami_id, key_name=key)
 
 
-def aws_check_vpc_exists(parameter, mode):
-
-    aws_id, aws_key = aws_load_credentials()
-    conn = boto.vpc.connect_to_region('us-east-1', aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-
-    if 'by_id' in mode:
-        vpcs = conn.get_all_vpcs(vpc_ids=parameter)
-        if vpcs:
-            return [vpc.id for vpc in vpcs]
-        else:
-            return None
-    elif 'by_cidr':
-        vpcs = conn.get_all_vpcs()
-        vpcs_cidrs = [vpc.cidr_block for vpc in vpcs if parameter in vpc.cidr_block]
-        if vpcs_cidrs:
-            return vpcs_cidrs
-        else:
-            return None
-    else:
-        print(red('Error: invalid mode. Choose between "by_ib" and "by_cidr".'))
-        sys.exit(1)
+# def aws_check_vpc_exists(parameter, mode):
+#     conn = boto.vpc.connect_to_region(region_name=REGION, aws_access_key_id=AWS_ID, aws_secret_access_key=AWS_KEY)
+#
+#     if 'by_id' in mode:
+#         vpcs = conn.get_all_vpcs(vpc_ids=parameter)
+#         if vpcs:
+#             return [vpc.id for vpc in vpcs]
+#         else:
+#             return None
+#     elif 'by_cidr':
+#         vpcs = conn.get_all_vpcs()
+#         vpcs_cidrs = [vpc.cidr_block for vpc in vpcs if parameter in vpc.cidr_block]
+#         if vpcs_cidrs:
+#             return vpcs_cidrs
+#         else:
+#             return None
+#     else:
+#         print(red('Error: invalid mode. Choose between "by_ib" and "by_cidr".'))
+#         sys.exit(1)
 
 
 def aws_create_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION,
@@ -119,11 +117,3 @@ def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, r
 
     for key, value in tags.iteritems():
         vpc.add_tag(key, value)
-
-
-def prova():
-    print AWS_ID
-    print AWS_KEY
-    print AWS_REGIONS
-    print AMI_LIST
-    print REGION
