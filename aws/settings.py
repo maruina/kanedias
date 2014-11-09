@@ -16,7 +16,7 @@ if os.path.exists('config.ini'):
     if boto_config.items('Settings'):
         REGION = boto_config.get('Settings', 'region')
     else:
-        print('Warning: default region missing. You have to specify it every time.')
+        print('Warning: default region missing. Remember to specify it every time.')
 else:
     print(red('Configuration file missing, abort!'))
     sys.exit(1)

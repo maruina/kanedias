@@ -35,6 +35,13 @@ def aws_create_hosted_zone(domain, aws_id=None or AWS_ID, aws_key=None or AWS_KE
 #         conn.run_instances(ami_id, key_name=key)
 
 
+def aws_print_all_vpc(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    vpcs = vpc_conn.get_all_vpcs()
+    print('You have {} VPC in region {} [{}]'.format(len(vpcs), AWS_REGIONS[region], region))
+    for vpc in vpcs:
+        print(green('VPC: {} - CIDR: {}'.format(vpc.id, vpc.cidr_block)))
+
 # def aws_check_vpc_exists(parameter, mode):
 #     conn = boto.vpc.connect_to_region(region_name=REGION, aws_access_key_id=AWS_ID, aws_secret_access_key=AWS_KEY)
 #
@@ -71,7 +78,7 @@ def aws_create_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=
                 vpc.add_tag(tag)
 
 
-def aws_subnet_vpc(vpc_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def aws_build_vpc(vpc_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Create the subnet for the VPC. The creation rule is: number of subnets = number of availability zones + a
     spare zone. For each subnet you have a private subnet and a public + spare subnet
@@ -111,9 +118,47 @@ def aws_subnet_vpc(vpc_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, regio
         subnet.add_tag('Name', 'Spare AZ ' + zone_string)
 
 
+def aws_create_internet_gateway(vpc_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    """
+    Check if the VPC has an Internet Gateway. If not, the function creates one and attach it to the target VPC
+    :param vpc_id: Target VPC ID
+    :param aws_id: Amazon Access Key ID
+    :param aws_key: Amazon Secret Access Key
+    :param region: Target VPC region
+    :return:
+    """
+    # Check if the VPC has an internet gateway already
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    vpc_internet_gateway = vpc_conn.create_internet_gateway()
+    vpc_conn.attach_internet_gateway(vpc_internet_gateway.id, vpc_id=vpc_id)
+    vpc_internet_gateway.add_tag("Name", "Global Internet Gateway")
+
+
+def aws_make_subnet_public(vpc_id, ig_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    vpc = vpc_conn.get_all_vpcs(vpc_ids=vpc_id)[0]
+    ig = vpc_conn.get_all_internet_gateways(internet_gateway_ids=ig_id)[0]
+
+    # Create a new route table for the public subnet
+    public_route_table = vpc_conn.create_route_table(vpc_id=vpc_id)
+    public_route_table.add_tag('Name', 'Global Public Route Table')
+    vpc_conn.create_route(public_route_table.id, '0.0.0.0/0', ig.id)
+
+    subnet_filter = {'vpcId': vpc_id}
+    subnets = vpc_conn.get_all_subnets(subnet_ids=None, filters=subnet_filter)
+
+    for subnet in subnets:
+        if 'Public' in subnet.tags['Name']:
+            vpc_conn.associate_route_table(route_table_id=public_route_table.id, subnet_id=subnet.id)
+
+
 def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpc = conn.get_all_vpcs(vpc_ids=vpc_id)[0]
 
     for key, value in tags.iteritems():
         vpc.add_tag(key, value)
+
+
+def aws_create_nat_instance(vpc_id, subnet, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    pass
