@@ -6,7 +6,7 @@ import boto.vpc
 from boto.route53.connection import Route53Connection
 from fabric.colors import red, green
 from netaddr import IPNetwork
-from settings import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, REGION
+from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, REGION
 
 
 def aws_create_hosted_zone(domain, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, caller_ref=None, comment=''):
@@ -161,4 +161,17 @@ def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, r
 
 
 def aws_create_nat_instance(vpc_id, subnet, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    pass
+
+
+def aws_create_security_group(name, description, vpc_id=None, dry_run=False):
+    """
+    Create a new security group for your account.
+    This will create the security group within the region you are currently connected to.
+    :param name: The name of the new security group
+    :param description: The description of the new security group
+    :param vpc_id: The ID of the VPC to create the security group in, if any.
+    :param dry_run: Set to True if the operation should not actually run.
+    :return: The newly created boto.ec2.securitygroup.SecurityGroup.
+    """
     pass
