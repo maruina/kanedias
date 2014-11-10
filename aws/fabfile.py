@@ -35,12 +35,17 @@ def aws_create_hosted_zone(domain, aws_id=None or AWS_ID, aws_key=None or AWS_KE
 #         conn.run_instances(ami_id, key_name=key)
 
 
-def aws_print_all_vpc(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def aws_print_all_vpc_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpcs = vpc_conn.get_all_vpcs()
     print('You have {} VPC in region {} [{}]'.format(len(vpcs), AWS_REGIONS[region], region))
     for vpc in vpcs:
         print(green('VPC: {} - CIDR: {}'.format(vpc.id, vpc.cidr_block)))
+        subnet_filter = {'vpcId': vpc.id}
+        subnets = [x for x in vpc_conn.get_all_subnets(filters=subnet_filter) if 'Name' in x.tags]
+        if subnets:
+            for subnet in subnets:
+                print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
 # def aws_check_vpc_exists(parameter, mode):
 #     conn = boto.vpc.connect_to_region(region_name=REGION, aws_access_key_id=AWS_ID, aws_secret_access_key=AWS_KEY)
@@ -145,7 +150,7 @@ def aws_make_subnet_public(vpc_id, ig_id, aws_id=None or AWS_ID, aws_key=None or
     vpc_conn.create_route(public_route_table.id, '0.0.0.0/0', ig.id)
 
     subnet_filter = {'vpcId': vpc_id}
-    subnets = vpc_conn.get_all_subnets(subnet_ids=None, filters=subnet_filter)
+    subnets = vpc_conn.get_all_subnets(filters=subnet_filter)
 
     for subnet in subnets:
         if 'Public' in subnet.tags['Name']:
@@ -160,18 +165,42 @@ def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, r
         vpc.add_tag(key, value)
 
 
-def aws_create_nat_instance(vpc_id, subnet, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
-    pass
-
-
-def aws_create_security_group(name, description, vpc_id=None, dry_run=False):
+def aws_create_nat_instance(subnet_id, key_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
-    Create a new security group for your account.
-    This will create the security group within the region you are currently connected to.
-    :param name: The name of the new security group
-    :param description: The description of the new security group
-    :param vpc_id: The ID of the VPC to create the security group in, if any.
-    :param dry_run: Set to True if the operation should not actually run.
-    :return: The newly created boto.ec2.securitygroup.SecurityGroup.
+    Create a NAT instance in the target subnet
+    :param vpc_id:
+    :param subnet:
+    :param aws_id:
+    :param aws_key:
+    :param region:
+    :return:
     """
-    pass
+    # Check if there is a NAT Security Group into the VPC.
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    security_groups = ec2_conn.get_all_security_groups()
+    nat_security_group = [x for x in security_groups if 'NAT_SG' in x.name][0]
+    # Create a NAT Security Group. Allow outbound connection and allow inbound SSH
+    if not nat_security_group:
+        nat_security_group = ec2_conn.create_security_group('NAT_SG', 'NAT Security Group Recommended Rules',
+                                                            vpc_id=subnet_id.vpc_id)
+        nat_security_group.tag('Name', 'NAT Security Group')
+        nat_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip='0.0.0.0/0')
+
+    # Create a NAT instance
+    filters = {
+        'architecture': 'x86_64',
+        'virtualization-type': 'hvm',
+        'block-device-mapping.volume-type': 'gp2',
+        "owner-alias": "amazon",
+        "name": "amzn-ami-vpc-nat*"
+    }
+    nat_image = ec2_conn.get_all_images(filters=filters)[0]
+    nat_key = [x for x in ec2_conn.get_all_key_pairs() if key_name in x.name][0]
+
+    print(nat_security_group.id)
+
+    nat_instance = ec2_conn.run_instances(image_id=nat_image.id, key_name=nat_key.name, instance_type='t2.micro',
+                                          subnet_id=subnet_id, security_group_ids=[nat_security_group.id])
+    # Allocate a new Elastic IP
+    new_ip = ec2_conn.allocate_address()
+    ec2_conn.associate_address(instance_id=nat_instance.instances, public_ip=new_ip.public_ip)
