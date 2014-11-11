@@ -9,32 +9,6 @@ from netaddr import IPNetwork
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, REGION
 
 
-def aws_create_hosted_zone(domain, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, caller_ref=None, comment=''):
-    route53 = Route53Connection(aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-
-    hosted_zones = route53.get_all_hosted_zones()['ListHostedZonesResponse']['HostedZones']
-    for hosted_zone in hosted_zones:
-        if domain in hosted_zone['Name']:
-            print(red('Error: hosted zone already exist'))
-            sys.exit(1)
-    else:
-        route53.create_hosted_zone(domain_name=domain, caller_ref=caller_ref, comment=comment)
-        print(green('Ok: Hosted zone {} created'.format(domain)))
-
-
-# def aws_ec2_run_instance(ami_id, key, instance_type=None, security_group=None):
-#     if not os.path.exists(key):
-#         print(red('Error, ssh key not found'))
-#         sys.exit(1)
-#     else:
-#         aws_id, aws_key = aws_load_credentials()
-#         conn = boto.ec2.connect_to_region('us-east-1', aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-#         # Red Hat Enterprise 6.5: ami-11125e21 no-micro
-#         # Ubuntu 12.04 LTS amd_64: ami-7d69244d
-#         # CentOS 6.5 amd_64: ami-a9de9c99
-#         conn.run_instances(ami_id, key_name=key)
-
-
 def aws_print_all_vpc_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpcs = vpc_conn.get_all_vpcs()
@@ -47,25 +21,6 @@ def aws_print_all_vpc_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, regio
             for subnet in subnets:
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
-# def aws_check_vpc_exists(parameter, mode):
-#     conn = boto.vpc.connect_to_region(region_name=REGION, aws_access_key_id=AWS_ID, aws_secret_access_key=AWS_KEY)
-#
-#     if 'by_id' in mode:
-#         vpcs = conn.get_all_vpcs(vpc_ids=parameter)
-#         if vpcs:
-#             return [vpc.id for vpc in vpcs]
-#         else:
-#             return None
-#     elif 'by_cidr':
-#         vpcs = conn.get_all_vpcs()
-#         vpcs_cidrs = [vpc.cidr_block for vpc in vpcs if parameter in vpc.cidr_block]
-#         if vpcs_cidrs:
-#             return vpcs_cidrs
-#         else:
-#             return None
-#     else:
-#         print(red('Error: invalid mode. Choose between "by_ib" and "by_cidr".'))
-#         sys.exit(1)
 
 
 def aws_create_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION,
@@ -76,24 +31,33 @@ def aws_create_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=
         print(red('Error, VPC already exists'))
     else:
         conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-        vpc = conn.create_vpc(cidr_block=cidr, instance_tenancy=tenancy, dry_run=dry_run)[0]
-        print(green(vpc))
-        if tags:
-            for tag in tags:
-                vpc.add_tag(tag)
 
 
-def aws_build_vpc(vpc_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+
+def aws_build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Create the subnet for the VPC. The creation rule is: number of subnets = number of availability zones + a
     spare zone. For each subnet you have a private subnet and a public + spare subnet
     :param vpc_id: the VPC to subnet
     """
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-    vpc = vpc_conn.get_all_vpcs(vpc_ids=vpc_id)[0]
+    vpcs = [x for x in vpc_conn.get_all_vpcs() if cidr in x.cidr_block]
+    if vpcs:
+        print(red('Warning: The following VPCs have the same CIDR you want to create'))
+        for vpc in vpcs:
+            print('VPC: {}'.format(vpc.id))
+        while True:
+            user_input = raw_input('Do you want to continue? [Y/n]: ')
+            if 'n' in str(user_input).lower():
+                print('Quitting...')
+                sys.exit(1)
+            elif 'Y' in str(user_input).upper():
+                print('Continue')
+                break
+            else:
+                print('Wrong answer, use [Y/n]')
 
     # Get all the availability zones from the region
-    region = str(vpc.region).rsplit(':')[-1]
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     av_zones = ec2_conn.get_all_zones()
 

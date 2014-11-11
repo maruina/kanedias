@@ -3,7 +3,7 @@ import sys
 from boto.pyami.config import Config
 from fabric.colors import red
 
-# Load the configuration
+# Load the configuration file
 if os.path.exists('config.ini'):
     boto_config = Config()
     boto_config.load_credential_file('config.ini')
@@ -11,12 +11,13 @@ if os.path.exists('config.ini'):
         AWS_ID = boto_config.get('Credentials', 'aws_access_key_id')
         AWS_KEY = boto_config.get('Credentials', 'aws_secret_access_key')
     else:
-        print(red('Credentials section is missing, abort!'))
+        print(red('Error: credentials section is missing, abort!'))
         sys.exit(1)
     if boto_config.items('Settings'):
         REGION = boto_config.get('Settings', 'region')
     else:
-        print('Warning: default region missing. Remember to specify it every time.')
+        print(red('Credentials section is missing, abort!'))
+        sys.exit(1)
 else:
     print(red('Configuration file missing, abort!'))
     sys.exit(1)
@@ -55,7 +56,7 @@ AMI_LIST = {
         }
     },
     'Ubuntu': {
-        'version': 'Debian x86_64 7.7',
+        'version': 'Ubuntu x86_64 12.04 LTS',
         'type': 'HVM with EBS-SSD',
         'regions': {
             'us-east-1': 'ami-34cc7a5c',
