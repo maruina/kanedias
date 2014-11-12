@@ -11,6 +11,8 @@ if os.path.exists('config.ini'):
         AWS_ID = boto_config.get('Credentials', 'aws_access_key_id')
         AWS_KEY = boto_config.get('Credentials', 'aws_secret_access_key')
         REGION = boto_config.get('Credentials', 'region')
+        DEFAULT_OS = boto_config.get('Credentials', 'default_os')
+        DEFAULT_SSH_DIR = boto_config.get('Credentials', 'default_ssh_dir')
     else:
         print(red('Error: credentials section is missing, abort!'))
         sys.exit(1)
@@ -62,6 +64,12 @@ AMI_LIST = {
             'eu-central-1': 'ami-643c0a79'
         }
     }
+}
+
+AMI_USER = {
+    'CentOS': 'ec2-user',
+    'Debian': 'ec2-user',
+    'Ubuntu': 'ubuntu'
 }
 
 VPC_TAGS = {
