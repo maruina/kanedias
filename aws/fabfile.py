@@ -7,13 +7,13 @@ import boto.vpc
 from boto.route53.connection import Route53Connection
 from fabric.colors import red, green
 from fabric.api import run, sudo, cd, put
-from fabric.context_managers import settings
+from fabric.context_managers import settings, env
 from netaddr import IPNetwork
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR
-from utils import find_subnet_nat_public_ip
+from utils import find_subnet_nat_public_ip, test_vpc_cidr
 
 
-def aws_print_all_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def print_all_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpcs = vpc_conn.get_all_vpcs()
     print('You have {} VPC in region {} [{}]'.format(len(vpcs), AWS_REGIONS[region], region))
@@ -26,32 +26,32 @@ def aws_print_all_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, regi
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
 
+def build_private_public_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    """
+    Create a VPC with one private and one public subnet, in 2 different availability zones
+    :param cidr: The CIDR for your VPC; min /16, max /28
+    :param aws_id: Amazon Access Key ID
+    :param aws_key: Amazon Secret Access Key
+    :param region: Target region for the VPC
+    :return: Nothing
+    """
+    pass
 
-def aws_create_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION,
-                   tags=None, tenancy=None, dry_run=False):
 
-    # Check if the VPC already exists
-    if aws_check_vpc_exists(cidr, 'by_cidr'):
-        print(red('Error, VPC already exists'))
-    else:
-        conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-
-
-def aws_build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Create the subnet for the VPC. The creation rule is: number of subnets = number of availability zones + a
     spare zone. For each subnet you have a private subnet and a public + spare subnet
-    :param vpc_id: the VPC to subnet
+    :param cidr: The CIDR for your VPC; min /16, max /28
+    :param aws_id: Amazon Access Key ID
+    :param aws_key: Amazon Secret Access Key
+    :param region: Target region for the VPC
+    :return: Nothing
     """
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-    vpcs = [x for x in vpc_conn.get_all_vpcs() if cidr in x.cidr_block]
-    if vpcs:
-        print(red('Error: the following VPCs have the same CIDR you want to create'))
-        for vpc in vpcs:
-            print('\tVPC: {}'.format(vpc.id))
-            sys.exit(1)
-    else:
-        vpc = vpc_conn.create_vpc(cidr_block=cidr)
+    # Exit if a VPC with that CIDR already exists
+    if test_vpc_cidr(cidr=cidr, vpc_conn=vpc_conn):
+        sys.exit(1)
 
     # Get all the availability zones from the region
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
@@ -127,8 +127,10 @@ def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, r
 
 def aws_create_instance(ec2_conn, name, image_id, key_name, type_id, subnet_id, security_group_ids):
     instance_reservation = ec2_conn.run_instances(image_id=image_id, key_name=key_name, instance_type=type_id,
-                                             subnet_id=subnet_id, security_group_ids=[security_group_ids])
+                                                  subnet_id=subnet_id, security_group_ids=[security_group_ids])
+    print(instance_reservation)
     instance = instance_reservation.instances[0]
+    print(instance)
     instance.add_tag('Name', name)
     # Check if the instance is ready
     print('Waiting for instance to start...')
@@ -216,8 +218,18 @@ def aws_create_global_nat_instance(subnet_id, key_name, env, aws_id=None or AWS_
     #TODO: Test NAT
 
 
-def spin_saltmaster(subnet_id, op_system=None or DEFAULT_OS, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
+def spin_saltmaster(subnet_id, key_string, op_system=None or DEFAULT_OS, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                     region=None or REGION):
+    """
+    Spin a salmaster instance in the target subnet
+    :param subnet_id: Target subnet
+    :param key_string: A string to identify the PEM key you want to use
+    :param op_system: The OS you want to install Saltmaster
+    :param aws_id: Amazon Access Key ID
+    :param aws_key: Amazon Secret Access Key
+    :param region: Target VPC region
+    :return: Nothing
+    """
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     subnet = vpc_conn.get_all_subnets(subnet_ids=[subnet_id])[0]
     vpc = vpc_conn.get_all_vpcs(vpc_ids=subnet.vpc_id)[0]
@@ -225,32 +237,36 @@ def spin_saltmaster(subnet_id, op_system=None or DEFAULT_OS, aws_id=None or AWS_
     # Check if there is a proper Secuirty Group already
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     security_groups = ec2_conn.get_all_security_groups()
-    saltmaster_security_group = [x for x in security_groups if 'Saltmaster_SG' in x.name][0]
+    saltmaster_security_group = [x for x in security_groups if 'Saltmaster_SG' in x.name]
     if not saltmaster_security_group:
         print('Creating Saltmaster Security Group...')
         saltmaster_security_group = ec2_conn.create_security_group('Saltmaster_SG', 'Saltmaster Security Group',
                                                                    vpc_id=subnet.vpc_id)
-        saltmaster_security_group.tag('Name', 'Saltmaster Security Group')
+        saltmaster_security_group.add_tag('Name', 'Saltmaster Security Group')
         saltmaster_security_group.authorize(ip_protocol='tcp', from_port=4505, to_port=4506, cidr_ip=vpc.cidr_block)
         saltmaster_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip='0.0.0.0/0')
         print('Done')
     else:
-        print('Saltmaster Security Group already exists')
+        saltmaster_security_group = saltmaster_security_group[0]
+        print('Saltmaster Security Group already exists: {}'.format(saltmaster_security_group.id))
 
     # Check how many Saltmaster instances already running
-    saltmaster_instances = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*'})
-    if not saltmaster_instances:
+    saltmaster_reservation = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*'})[0]
+    if not saltmaster_reservation:
         saltmaster_name = 'saltmaster.global.' + subnet.availability_zone + '.archondronistics.lan'
 
         print('New Saltmaster instance name: {}'.format(saltmaster_name))
+        print('New Saltmaster OS: {}'.format(op_system))
+
+        saltmaster_key = [x for x in ec2_conn.get_all_key_pairs() if key_string in x.name][0]
 
         # Run the instance
         saltmaster_instance = aws_create_instance(ec2_conn=ec2_conn, name=saltmaster_name,
-                                                  image_id=AMI_LIST[op_system]['regions'][region], key_name='ruio',
-                                                  type_id='t2.micro', subnet_id=subnet.id,
+                                                  image_id=AMI_LIST[op_system]['regions'][region],
+                                                  key_name=saltmaster_key.name, type_id='t2.micro', subnet_id=subnet.id,
                                                   security_group_ids=saltmaster_security_group.id)
     else:
-        saltmaster_instance = saltmaster_instances[0]
+        saltmaster_instance = saltmaster_reservation.instances[0]
         print('Saltmaster instance {} already running'.format(saltmaster_instance.id))
 
     # Look for the appropriate NAT instance public ip
@@ -258,14 +274,11 @@ def spin_saltmaster(subnet_id, op_system=None or DEFAULT_OS, aws_id=None or AWS_
     print('Public IP to connect to: {}'.format(nat_public_ip))
 
     conn_key = DEFAULT_SSH_DIR + saltmaster_instance.key_name + '.pem'
-    script = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack')) + 'bootstrap_salt.sh'
+    script = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack')) +\
+             '/bootstrap_saltmaster.sh'
 
-    with settings(gateway=nat_public_ip, host=saltmaster_instance.private_ip_address, user=AMI_USER[op_system],
-                  key_file=conn_key), cd('/root'):
-        run('uname -a')
-        put(script, mode='+x')
-        sudo(script)
-
-
-
-
+    with settings(gateway=nat_public_ip, host_string='root@'+saltmaster_instance.private_ip_address, user=AMI_USER[op_system],
+                  key_filename=conn_key, forward_agent=True), cd('/root'):
+        # run('uname -a')
+        put(script, mode=0700)
+        run('./bootstrap_saltmaster.sh')
