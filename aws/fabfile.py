@@ -52,6 +52,8 @@ def build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=No
     # Exit if a VPC with that CIDR already exists
     if test_vpc_cidr(cidr=cidr, vpc_conn=vpc_conn):
         sys.exit(1)
+    else:
+        vpc = vpc_conn.create_vpc(cidr_block=cidr)
 
     # Get all the availability zones from the region
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
