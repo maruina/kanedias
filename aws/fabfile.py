@@ -1,6 +1,7 @@
 import os
 import sys
 import math
+import time
 import boto.ec2
 import boto.vpc
 from boto.route53.connection import Route53Connection
@@ -9,7 +10,7 @@ from netaddr import IPNetwork
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, REGION
 
 
-def aws_print_all_vpc_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def aws_print_all_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpcs = vpc_conn.get_all_vpcs()
     print('You have {} VPC in region {} [{}]'.format(len(vpcs), AWS_REGIONS[region], region))
@@ -33,7 +34,6 @@ def aws_create_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=
         conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
 
 
-
 def aws_build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Create the subnet for the VPC. The creation rule is: number of subnets = number of availability zones + a
@@ -43,19 +43,12 @@ def aws_build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, regio
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpcs = [x for x in vpc_conn.get_all_vpcs() if cidr in x.cidr_block]
     if vpcs:
-        print(red('Warning: The following VPCs have the same CIDR you want to create'))
+        print(red('Error: the following VPCs have the same CIDR you want to create'))
         for vpc in vpcs:
-            print('VPC: {}'.format(vpc.id))
-        while True:
-            user_input = raw_input('Do you want to continue? [Y/n]: ')
-            if 'n' in str(user_input).lower():
-                print('Quitting...')
-                sys.exit(1)
-            elif 'Y' in str(user_input).upper():
-                print('Continue')
-                break
-            else:
-                print('Wrong answer, use [Y/n]')
+            print('\tVPC: {}'.format(vpc.id))
+            sys.exit(1)
+    else:
+        vpc = vpc_conn.create_vpc(cidr_block=cidr)
 
     # Get all the availability zones from the region
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
@@ -129,24 +122,29 @@ def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, r
         vpc.add_tag(key, value)
 
 
-def aws_create_nat_instance(subnet_id, key_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def aws_create_global_nat_instance(subnet_id, key_name, env, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
+                                   region=None or REGION):
     """
-    Create a NAT instance in the target subnet
-    :param vpc_id:
-    :param subnet:
+    Create a single NAT instance in the target subnet
+    :param subnet_id:
+    :param key_name:
+    :param env:
     :param aws_id:
     :param aws_key:
     :param region:
     :return:
     """
-    # Check if there is a NAT Security Group into the VPC.
+    # Retrive subnet
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    subnet = vpc_conn.get_all_subnets(subnet_ids=[subnet_id])[0]
+    # Check if there is a NAT Security Group into the VPC
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     security_groups = ec2_conn.get_all_security_groups()
     nat_security_group = [x for x in security_groups if 'NAT_SG' in x.name][0]
     # Create a NAT Security Group. Allow outbound connection and allow inbound SSH
     if not nat_security_group:
-        nat_security_group = ec2_conn.create_security_group('NAT_SG', 'NAT Security Group Recommended Rules',
-                                                            vpc_id=subnet_id.vpc_id)
+        nat_security_group = ec2_conn.create_security_group('NAT_Global_SG', 'NAT Global Security Group',
+                                                            vpc_id=subnet.vpc_id)
         nat_security_group.tag('Name', 'NAT Security Group')
         nat_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip='0.0.0.0/0')
 
@@ -161,10 +159,53 @@ def aws_create_nat_instance(subnet_id, key_name, aws_id=None or AWS_ID, aws_key=
     nat_image = ec2_conn.get_all_images(filters=filters)[0]
     nat_key = [x for x in ec2_conn.get_all_key_pairs() if key_name in x.name][0]
 
-    print(nat_security_group.id)
+    nat_reservation = ec2_conn.run_instances(image_id=nat_image.id, key_name=nat_key.name, instance_type='t2.micro',
+                                             subnet_id=subnet.id, security_group_ids=[nat_security_group.id])
+    nat_instance = nat_reservation.instances[0]
+    # Check how many NAT instances already running
+    nat_instances = ec2_conn.get_all_instances(filters={'tag:Name': 'nat*'})
+    nat_instance_name = 'nat.' + str(len(nat_instances) + 1).zfill(3) + '.' + env + '.' +\
+                        subnet.availability_zone + '.archondronistics.lan'
+    nat_instance.add_tag('Name', nat_instance_name)
+    # Check if the instance is ready
+    print('Waiting for instance to start...')
+    status = nat_instance.update()
+    while status == 'pending':
+        time.sleep(10)
+        status = nat_instance.update()
+    if status == 'running':
+        print(green('New instance {} ready'.format(nat_instance.id)))
+    else:
+        print('Instance status: ' + status)
 
-    nat_instance = ec2_conn.run_instances(image_id=nat_image.id, key_name=nat_key.name, instance_type='t2.micro',
-                                          subnet_id=subnet_id, security_group_ids=[nat_security_group.id])
-    # Allocate a new Elastic IP
+    # Allocate and associate a new Elastic IP
+    print('Allocate new Elastic IP')
     new_ip = ec2_conn.allocate_address()
-    ec2_conn.associate_address(instance_id=nat_instance.instances, public_ip=new_ip.public_ip)
+    ec2_conn.associate_address(instance_id=nat_instance.id, public_ip=new_ip.public_ip)
+    time.sleep(3)
+    nat_instance.update()
+    print(green('Instance {} [{}] accessible at {}'.format(nat_instance.tags['Name'], nat_instance.id,
+                                                           nat_instance.ip_address)))
+    # Disabling Source/Destination Checks
+    ec2_conn.modify_instance_attribute(instance_id=nat_instance.id, attribute='sourceDestCheck', value='False')
+    # Updating the Main Route Table
+    route_table = vpc_conn.get_all_route_tables(filters={'tag:Name': 'Global Private*'})[0]
+    vpc_conn.create_route(route_table_id=route_table.id, destination_cidr_block='0.0.0.0/0',
+                          instance_id=nat_instance.id)
+
+
+def aws_spin_saltmaster(ami_id, subnet_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    subnet = vpc_conn.get_all_subnets(subnet_ids=[subnet_id])[0]
+    vpc = vpc_conn.get_all_vpcs(vpc_ids=subnet.vpc_id)[0]
+
+    # Check if there is a proper Secuirty Group already
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    security_groups = ec2_conn.get_all_security_groups()
+    saltmaster_security_group = [x for x in security_groups if 'Saltmaster_SG' in x.name][0]
+    if not saltmaster_security_group:
+        saltmaster_security_group = ec2_conn.create_security_group('Saltmaster_SG', 'Saltmaster Security Group',
+                                                                   vpc_id=subnet.vpc_id)
+        saltmaster_security_group.tag('Name', 'NAT Security Group')
+        saltmaster_security_group.authorize(ip_protocol='tcp', from_port=4505, to_port=4506, cidr_ip=vpc.cidr_block)
+        saltmaster_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip=vpc.cidr_block)

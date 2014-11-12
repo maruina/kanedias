@@ -10,16 +10,12 @@ if os.path.exists('config.ini'):
     if boto_config.items('Credentials'):
         AWS_ID = boto_config.get('Credentials', 'aws_access_key_id')
         AWS_KEY = boto_config.get('Credentials', 'aws_secret_access_key')
+        REGION = boto_config.get('Credentials', 'region')
     else:
         print(red('Error: credentials section is missing, abort!'))
         sys.exit(1)
-    if boto_config.items('Settings'):
-        REGION = boto_config.get('Settings', 'region')
-    else:
-        print(red('Credentials section is missing, abort!'))
-        sys.exit(1)
 else:
-    print(red('Configuration file missing, abort!'))
+    print(red('Error: configuration file missing, abort!'))
     sys.exit(1)
 
 AWS_REGIONS = {
@@ -70,4 +66,11 @@ AMI_LIST = {
 
 VPC_TAGS = {
 
+}
+
+ENVIRONMENTS = {
+    'dev': 'development',
+    'tst': 'test',
+    'sta': 'staging',
+    'prd': 'production'
 }
