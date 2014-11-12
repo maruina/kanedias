@@ -122,6 +122,23 @@ def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, r
         vpc.add_tag(key, value)
 
 
+def aws_create_instance(ec2_conn, name, image_id, key_name, type_id, subnet_id, security_group_ids):
+    instance_reservation = ec2_conn.run_instances(image_id=image_id, key_name=key_name, instance_type=type_id,
+                                             subnet_id=subnet_id, security_group_ids=[security_group_ids])
+    instance = instance_reservation.instances[0]
+    instance.add_tag('Name', name)
+    # Check if the instance is ready
+    print('Waiting for instance to start...')
+    status = instance.update()
+    while status == 'pending':
+        time.sleep(10)
+        status = instance.update()
+    if status == 'running':
+        print(green('New instance {} ready'.format(instance.id)))
+    else:
+        print('Instance status: ' + status)
+
+
 def aws_create_global_nat_instance(subnet_id, key_name, env, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                                    region=None or REGION):
     """
@@ -192,6 +209,7 @@ def aws_create_global_nat_instance(subnet_id, key_name, env, aws_id=None or AWS_
     route_table = vpc_conn.get_all_route_tables(filters={'tag:Name': 'Global Private*'})[0]
     vpc_conn.create_route(route_table_id=route_table.id, destination_cidr_block='0.0.0.0/0',
                           instance_id=nat_instance.id)
+    #TODO: Test NAT
 
 
 def aws_spin_saltmaster(ami_id, subnet_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -206,6 +224,8 @@ def aws_spin_saltmaster(ami_id, subnet_id, aws_id=None or AWS_ID, aws_key=None o
     if not saltmaster_security_group:
         saltmaster_security_group = ec2_conn.create_security_group('Saltmaster_SG', 'Saltmaster Security Group',
                                                                    vpc_id=subnet.vpc_id)
-        saltmaster_security_group.tag('Name', 'NAT Security Group')
+        saltmaster_security_group.tag('Name', 'Saltmaster Security Group')
         saltmaster_security_group.authorize(ip_protocol='tcp', from_port=4505, to_port=4506, cidr_ip=vpc.cidr_block)
         saltmaster_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip=vpc.cidr_block)
+
+    # Run the instance
