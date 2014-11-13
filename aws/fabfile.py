@@ -7,11 +7,12 @@ import boto.vpc
 import boto.route53
 from socket import gethostbyname
 from fabric.colors import red, green
-from fabric.api import run, sudo, cd, put
-from fabric.context_managers import settings, env
-from netaddr import IPNetwork
-from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR
-from utils import find_subnet_nat_public_ip, test_vpc_cidr, calculate_public_private_cidr
+from fabric.api import run, sudo, cd, put, get
+from fabric.context_managers import settings
+from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR,\
+    DEFAULT_FILE_DIR
+from utils import find_subnet_nat_public_ip, test_vpc_cidr, calculate_public_private_cidr, find_ssh_user,\
+    find_subnet_nat_instance
 
 
 def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -25,6 +26,10 @@ def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None 
         if subnets:
             for subnet in subnets:
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
+
+
+def print_instances_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    pass
 
 
 def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -125,95 +130,6 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
 
     print(green('VPC succesfully created!'))
     print(red('Remember to create manually the Private Hosted Zone {}'.format(domain_name)))
-
-
-def build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
-    """
-    Create the subnet for the VPC. The creation rule is: number of subnets = number of availability zones + a
-    spare zone. For each subnet you have a private subnet and a public + spare subnet
-    :param cidr: The CIDR for your VPC; min /16, max /28
-    :param aws_id: Amazon Access Key ID
-    :param aws_key: Amazon Secret Access Key
-    :param region: Target region for the VPC
-    :return: Nothing
-    """
-    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-    # Exit if a VPC with that CIDR already exists
-    if test_vpc_cidr(cidr=cidr, vpc_conn=vpc_conn):
-        sys.exit(1)
-    else:
-        vpc = vpc_conn.create_vpc(cidr_block=cidr)
-
-    # Get all the availability zones from the region
-    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-    av_zones = ec2_conn.get_all_zones()
-
-    # At least one subnet per zone + 1 spare
-    subnets_desired_number = len(av_zones) + 1
-    vpc_mask_bits = int(vpc.cidr_block.split('/')[1])
-    vpc_network = IPNetwork(vpc.cidr_block)
-    subnets_maks_bits = vpc_mask_bits + int(math.ceil(math.log(subnets_desired_number, 2)))
-    vpc_subnets = list(vpc_network.subnet(subnets_maks_bits))
-
-    # Create the subnets
-    for counter, zone in enumerate(av_zones):
-        zone_string = str(zone).split(':')[1]
-        # Create the Private subnet
-        private_subnet, public_and_spare_subnet = list(vpc_subnets[counter].subnet(subnets_maks_bits + 1))
-        subnet = vpc_conn.create_subnet(vpc_id=vpc.id, cidr_block=str(private_subnet),
-                                        availability_zone=zone_string)
-        subnet.add_tag('Name', 'Private AZ ' + zone_string)
-
-        # Create the Public and Spare subnet
-        public_subnet, spare_subnet = list(public_and_spare_subnet.subnet(public_and_spare_subnet.prefixlen + 1))
-        subnet = vpc_conn.create_subnet(vpc_id=vpc.id, cidr_block=str(public_subnet),
-                                        availability_zone=zone_string)
-        subnet.add_tag('Name', 'Public AZ ' + zone_string)
-        subnet = vpc_conn.create_subnet(vpc_id=vpc.id, cidr_block=str(spare_subnet),
-                                        availability_zone=zone_string)
-        subnet.add_tag('Name', 'Spare AZ ' + zone_string)
-
-
-def aws_create_internet_gateway(vpc_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
-    """
-    Check if the VPC has an Internet Gateway. If not, the function creates one and attach it to the target VPC
-    :param vpc_id: Target VPC ID
-    :param aws_id: Amazon Access Key ID
-    :param aws_key: Amazon Secret Access Key
-    :param region: Target VPC region
-    :return:
-    """
-    # Check if the VPC has an internet gateway already
-    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-    vpc_internet_gateway = vpc_conn.create_internet_gateway()
-    vpc_conn.attach_internet_gateway(vpc_internet_gateway.id, vpc_id=vpc_id)
-    vpc_internet_gateway.add_tag("Name", "Internet Gateway" )
-
-
-def aws_make_subnet_public(vpc_id, ig_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
-    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-    vpc = vpc_conn.get_all_vpcs(vpc_ids=vpc_id)[0]
-    ig = vpc_conn.get_all_internet_gateways(internet_gateway_ids=ig_id)[0]
-
-    # Create a new route table for the public subnet
-    public_route_table = vpc_conn.create_route_table(vpc_id=vpc_id)
-    public_route_table.add_tag('Name', 'Global Public Route Table')
-    vpc_conn.create_route(public_route_table.id, '0.0.0.0/0', ig.id)
-
-    subnet_filter = {'vpcId': vpc_id}
-    subnets = vpc_conn.get_all_subnets(filters=subnet_filter)
-
-    for subnet in subnets:
-        if 'Public' in subnet.tags['Name']:
-            vpc_conn.associate_route_table(route_table_id=public_route_table.id, subnet_id=subnet.id)
-
-
-def aws_add_tags(vpc_id, tags, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
-    conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-    vpc = conn.get_all_vpcs(vpc_ids=vpc_id)[0]
-
-    for key, value in tags.iteritems():
-        vpc.add_tag(key, value)
 
 
 def aws_create_instance(ec2_conn, name, image_id, key_name, type_id, subnet_id, security_group_ids):
@@ -381,3 +297,65 @@ def build_private_hosted_zone(vpc_id, domain_name, aws_id=None or AWS_ID, aws_ke
     route53_conn = boto.route53.connect_to_region(region_name=region, aws_access_key_id=aws_id,
                                                   aws_secret_access_key=aws_key)
     #TODO: manca l'opzione per private_hosted_zone
+
+
+def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    """
+    Install salt minion on target instance_id
+    :param instance_id:
+    :param aws_id:
+    :param aws_key:
+    :param region:
+    :return:
+    """
+    # Check if the instance exists
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    reservations = ec2_conn.get_all_instances(instance_ids=[instance_id])
+    if not reservations:
+        print(red('Error, instance {} does not exitst'.format(instance_id)))
+        sys.exit(1)
+    else:
+        instance = reservations[0].instances[0]
+
+    print('Instance {} ({})'.format(instance.tags['Name'], instance.id))
+
+    # Find the saltmaster
+    saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*'})
+    if not saltmaster_reservations:
+        print(red('Error, saltmaster does not exists in this region'))
+        sys.exit(1)
+    else:
+        saltmaster = saltmaster_reservations[0].instances[0]
+    saltmaster_ssh_key = DEFAULT_SSH_DIR + saltmaster.key_name + '.pem'
+    saltmaster_private_ip = saltmaster.private_ip_address
+    saltmaster_ssh_user = find_ssh_user(instance_id=saltmaster.id, ec2_conn=ec2_conn)
+
+    # Find the NAT parameters
+    nat_instance = find_subnet_nat_instance(subnet_id=instance.subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
+    if not nat_instance:
+        print(red('Error, NAT instance not found'))
+        sys.exit(1)
+    else:
+        nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
+
+    # Generate a Salt Master accepted key and download it
+    with settings(gateway=nat_instance.ip_address, host_string=saltmaster_ssh_user + '@' + saltmaster_private_ip,
+                  user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
+        sudo('salt-key --gen-keys=' + instance.tags['Name'])
+        sudo('mkdir /etc/salt/pki/master/minions/' + instance.tags['Name'])
+        sudo('cp ' + instance.tags['Name'] + '.pub /etc/salt/pki/master/minions/' + instance.tags['Name'] + '/')
+        get('/root/' + instance.tags['Name'] + '.pem', DEFAULT_FILE_DIR)
+        get('/root/' + instance.tags['Name'] + '.pub', DEFAULT_FILE_DIR)
+
+    ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+
+    # Connect to the instance
+    # Do I have public IP?
+    if instance.ip_address:
+        ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
+        with settings(host_string=instance.ip_address, user=ssh_user, key_filename=ssh_key):
+            pass
+    else:
+        # I need to find the NAT instance public IP associated with my instance
+        pass

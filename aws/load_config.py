@@ -13,6 +13,7 @@ if os.path.exists('config.ini'):
         REGION = boto_config.get('Credentials', 'region')
         DEFAULT_OS = boto_config.get('Credentials', 'default_os')
         DEFAULT_SSH_DIR = boto_config.get('Credentials', 'default_ssh_dir')
+        DEFAULT_FILE_DIR = boto_config.get('Credentials', 'default_file_dir')
     else:
         print(red('Error: credentials section is missing, abort!'))
         sys.exit(1)
@@ -67,14 +68,12 @@ AMI_LIST = {
 }
 
 AMI_USER = {
-    'CentOS': 'ec2-user',
+    'CentOS': 'root',
     'Debian': 'ec2-user',
-    'Ubuntu': 'ubuntu'
+    'Ubuntu': 'ubuntu',
+    'Amazon': 'ec2-user'
 }
 
-VPC_TAGS = {
-
-}
 
 ENVIRONMENTS = {
     'dev': 'development',

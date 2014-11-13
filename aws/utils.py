@@ -18,6 +18,40 @@ def find_subnet_nat_public_ip(subnet_id, ec2_conn, vpc_conn):
     return internet_eni.publicIp
 
 
+def find_subnet_nat_instance(subnet_id, ec2_conn, vpc_conn):
+    """
+    Find the NAT instance for the given subnet
+    :param subnet_id: The desired subnet
+    :param ec2_conn: A boto.ec2.connect_to_region() object
+    :param vpc_conn: A boto.vpc.connect_to_region() object
+    :return: The NAT instance public IP
+    """
+    routes = vpc_conn.get_all_route_tables()
+    subnet_route = [r for r in routes for a in r.associations if a.subnet_id and subnet_id in a.subnet_id][0]
+    instance_id = [r for r in subnet_route.routes if '0.0.0.0/0' in r.destination_cidr_block][0].instance_id
+    reservation = ec2_conn.get_all_instances(instance_ids=instance_id)[0]
+    instance = reservation.instances[0]
+    return instance
+
+
+def find_ssh_user(instance_id, ec2_conn):
+    """
+    Find the SSH user for the given instance
+    :param instance_id:
+    :param ec2_conn:
+    :return:
+    """
+    reservation = ec2_conn.get_all_instances(instance_ids=instance_id)[0]
+    instance = reservation.instances[0]
+    image = ec2_conn.get_all_images(image_ids=instance.image_id)[0]
+    if 'Amazon' in image.description:
+        return 'ec2-user'
+    elif 'CentOS' in image.description:
+        return 'root'
+    else:
+        return 'ubuntu'
+
+
 def test_vpc_cidr(cidr, vpc_conn):
     """
     Test if already exists a VPC with the desired CIDR
