@@ -1,6 +1,5 @@
 import os
 import sys
-import math
 import time
 import boto.ec2
 import boto.vpc
@@ -351,7 +350,7 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
             print(green('Salt already installed on instance {} ({})'.format(instance_name, instance.id)))
             sys.exit(0)
         else:
-            print('Installing salt...')
+            print('Installing salt')
 
             salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
             bootstrap_script = salt_script_folder + '/bootstrap_saltminion.sh'
@@ -381,4 +380,8 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
                 put(local_path=DEFAULT_FILE_DIR + instance_name + '.pub',
                     remote_path='/etc/salt/pki/minion/' + instance_name + '.pub', use_sudo=True)
                 sudo('service salt-minion start')
-                sudo('salt-call state.highstate')
+                with settings(warn_only=True):
+                    if sudo('salt-call state.highstate') == 0:
+                        print(green('Salt succesfully installed!'))
+                    else:
+                        print(red('Error, cannot execute salt-call'))
