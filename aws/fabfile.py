@@ -5,6 +5,7 @@ import time
 import boto.ec2
 import boto.vpc
 import boto.route53
+from socket import gethostbyname
 from fabric.colors import red, green
 from fabric.api import run, sudo, cd, put
 from fabric.context_managers import settings, env
@@ -26,9 +27,9 @@ def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None 
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
 
-def build_private_public_vpc(cidr, key_user, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
-    Create a VPC with one private and one public subnet, in 2 different availability zones
+    Create a VPC with one private and one public subnet, in 2 different availability zones chosed at random
     :param cidr: The CIDR for your VPC; min /16, max /28
     :param key_user:
     :param aws_id: Amazon Access Key ID
@@ -50,6 +51,18 @@ def build_private_public_vpc(cidr, key_user, aws_id=None or AWS_ID, aws_key=None
         vpc_conn.modify_vpc_attribute(vpc_id=vpc.id, enable_dns_support=True)
         vpc_conn.modify_vpc_attribute(vpc_id=vpc.id, enable_dns_hostnames=True)
         print('VPC {} in {} ({}) created'.format(vpc.id, AWS_REGIONS[vpc.region.name], vpc.region.name))
+
+    # Create the DHCP Option
+    dhcp_options = vpc_conn.create_dhcp_options(domain_name=domain_name, domain_name_servers=['AmazonProvidedDNS'],
+                                               ntp_servers=[
+                                                   gethostbyname('0.amazon.pool.ntp.org'),
+                                                   gethostbyname('1.amazon.pool.ntp.org'),
+                                                   gethostbyname('2.amazon.pool.ntp.org'),
+                                                   gethostbyname('3.amazon.pool.ntp.org')
+                                               ])
+    dhcp_options.add_tag('Name', domain_name + ' internal')
+    vpc_conn.associate_dhcp_options(dhcp_options_id=dhcp_options.id, vpc_id=vpc.id)
+    print('DHCP Options {} created'.format(dhcp_options.id))
 
     # Create an Internet Gateway
     internet_gateway = vpc_conn.create_internet_gateway()
@@ -315,6 +328,7 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
                                                                    vpc_id=subnet.vpc_id)
         saltmaster_security_group.add_tag('Name', 'Saltmaster Security Group')
         saltmaster_security_group.authorize(ip_protocol='tcp', from_port=4505, to_port=4506, cidr_ip=vpc.cidr_block)
+        saltmaster_security_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1, cidr_ip=vpc.cidr_block)
         saltmaster_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip='0.0.0.0/0')
         print('Done')
     else:
