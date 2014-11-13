@@ -40,12 +40,14 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     av_zones = ec2_conn.get_all_zones()
-    vpcs = test_vpc_cidr(cidr=cidr, vpc_conn=vpc_conn)
 
-    # Exit if a VPC with that CIDR already exists
+    #Check if a VPC with that CIDR already exists
+    vpcs = test_vpc_cidr(cidr=cidr, vpc_conn=vpc_conn)
     if vpcs:
-        vpc = vpcs[0]
+        print(red('You have a VPC withing the desired subnet already, aborting...'))
+        sys.exit(1)
     else:
+        # Create the VPC
         vpc = vpc_conn.create_vpc(cidr_block=cidr)
         vpc.add_tag('Name', 'Public/Private VPC')
         vpc_conn.modify_vpc_attribute(vpc_id=vpc.id, enable_dns_support=True)
@@ -54,12 +56,12 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
 
     # Create the DHCP Option
     dhcp_options = vpc_conn.create_dhcp_options(domain_name=domain_name, domain_name_servers=['AmazonProvidedDNS'],
-                                               ntp_servers=[
-                                                   gethostbyname('0.amazon.pool.ntp.org'),
-                                                   gethostbyname('1.amazon.pool.ntp.org'),
-                                                   gethostbyname('2.amazon.pool.ntp.org'),
-                                                   gethostbyname('3.amazon.pool.ntp.org')
-                                               ])
+                                                ntp_servers=[
+                                                    gethostbyname('0.amazon.pool.ntp.org'),
+                                                    gethostbyname('1.amazon.pool.ntp.org'),
+                                                    gethostbyname('2.amazon.pool.ntp.org'),
+                                                    gethostbyname('3.amazon.pool.ntp.org')
+                                                ])
     dhcp_options.add_tag('Name', domain_name + ' internal')
     vpc_conn.associate_dhcp_options(dhcp_options_id=dhcp_options.id, vpc_id=vpc.id)
     print('DHCP Options {} created'.format(dhcp_options.id))
@@ -90,6 +92,7 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
     vpc_conn.create_route(route_table_id=public_route_table.id, destination_cidr_block='0.0.0.0/0',
                           gateway_id=internet_gateway.id)
     print('Public Route created')
+
     # Associate the public subnet
     vpc_conn.associate_route_table(route_table_id=public_route_table.id, subnet_id=subnet_dict['Public'].id)
 
@@ -116,8 +119,12 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
     vpc_conn.create_route(route_table_id=private_route_table.id, destination_cidr_block='0.0.0.0/0',
                           instance_id=nat_instance.id)
     print('Private Route created')
+
     # Associate the private subnet
     vpc_conn.associate_route_table(route_table_id=private_route_table.id, subnet_id=subnet_dict['Private'].id)
+
+    print(green('VPC succesfully created!'))
+    print(red('Remember to create manually the Private Hosted Zone {}'.format(domain_name)))
 
 
 def build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
