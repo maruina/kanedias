@@ -1,3 +1,4 @@
+import math
 from fabric.colors import red
 from netaddr import IPNetwork
 
@@ -29,18 +30,29 @@ def test_vpc_cidr(cidr, vpc_conn):
         print(red('Error: the following VPCs have the same CIDR you want to create'))
         for vpc in vpcs:
             print('\tVPC: {}'.format(vpc.id))
-        return True
+        return vpcs
     else:
-        return False
+        return None
 
 
-def split_cidr(cidr, subnets):
+def calculate_public_private_cidr(vpc_cidr, av_zones):
     """
-    Divide the
-    :param cidr: The desired CIDR
-    :param subnets: A list contain the name of the subnets. For example ['Public', 'Private'] or
-    ['Public', 'Private', 'Spare']
+    Divide the CIDR according the subnets number
+    :param vpc_cidr: The desired CIDR
+    :param av_zones: A boto.ec2.get_all_zones() object containing all the AZ
     :return: A dictionary contains the subnet and its cidr
     """
-
+    subnet_tags = ['Public', 'Private']
+    vpc_mask_bits = int(vpc_cidr.split('/')[1])
+    vpc_network = IPNetwork(vpc_cidr)
+    subnets_maks_bits = vpc_mask_bits + 1
+    vpc_subnets = list(vpc_network.subnet(subnets_maks_bits))
+    subnet_dict = {}
+    for counter, subnet in enumerate(subnet_tags):
+        subnet_name = subnet_tags[counter] + ' ' + av_zones[counter].name
+        subnet_dict[subnet_name] = {
+            'Network': vpc_subnets[counter],
+            'Zone': av_zones[counter]
+        }
+    return subnet_dict
 

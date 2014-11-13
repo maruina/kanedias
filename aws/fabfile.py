@@ -10,7 +10,7 @@ from fabric.api import run, sudo, cd, put
 from fabric.context_managers import settings, env
 from netaddr import IPNetwork
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR
-from utils import find_subnet_nat_public_ip, test_vpc_cidr
+from utils import find_subnet_nat_public_ip, test_vpc_cidr, calculate_public_private_cidr
 
 
 def print_all_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -26,16 +26,71 @@ def print_all_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=N
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
 
-def build_private_public_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def build_private_public_vpc(cidr, key_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Create a VPC with one private and one public subnet, in 2 different availability zones
     :param cidr: The CIDR for your VPC; min /16, max /28
+    :param key_name:
     :param aws_id: Amazon Access Key ID
     :param aws_key: Amazon Secret Access Key
     :param region: Target region for the VPC
     :return: Nothing
     """
-    pass
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    av_zones = ec2_conn.get_all_zones()
+    vpcs = test_vpc_cidr(cidr=cidr, vpc_conn=vpc_conn)
+
+    # Exit if a VPC with that CIDR already exists
+    if vpcs:
+        vpc = vpcs[0]
+    else:
+        vpc = vpc_conn.create_vpc(cidr_block=cidr)
+        vpc.add_tag('Name', 'Public/Private VPC')
+        vpc_conn.modify_vpc_attribute(vpc_id=vpc.id, enable_dns_support=True, enable_dns_hostnames=True)
+        print('Create VPC {} in {} ({})'.format(vpc.id, AWS_REGIONS[vpc.region.name], vpc.region.name))
+
+    # Create an Internet Gateway
+    internet_gateway = vpc_conn.create_internet_gateway()
+    print('Internet Gateway {} created'.format(internet_gateway.id))
+    vpc_conn.attach_internet_gateway(internet_gateway.id, vpc_id=vpc.id)
+    internet_gateway.add_tag("Name", "Internet Gateway " + vpc.tags['Name'])
+
+    # Divide the VPC in subnets
+    subnet_dict = calculate_public_private_cidr(vpc_cidr=cidr, av_zones=av_zones)
+    subnets = {}
+    for key, item in subnet_dict.iteritems():
+        subnets[key] = vpc_conn.create_subnet(vpc_id=vpc.id, cidr_block=item['Network'].cidr,
+                                              availability_zone=item['Zone'].name)
+        subnets[key].add_tag('Name', key)
+
+    # Create the Public Route Table
+    public_route_table = vpc_conn.create_route_table(vpc_id=vpc.id)
+    print('Public Route Table {} created'.format(public_route_table.id))
+    public_route_table.add_tag('Name', 'Public Route Table')
+    vpc_conn.create_route(route_table_id=public_route_table.id, destination_cidr_block='0.0.0.0/0',
+                          gateway_id=internet_gateway.id)
+    print('Public Route created')
+    # Associate the public subnet
+    vpc_conn.associate_route_table(route_table_id=public_route_table.id, subnet_id=subnets['Public'].id)
+
+    # Create a SSH key for the region
+    key = ec2_conn.create_key_pair(key_name=key_name + '-' + vpc.region.name)
+    print('SSH key {} created'.format(key.name))
+    key.save(DEFAULT_SSH_DIR)
+
+    # Create a NAT instance
+    nat_instance = spin_nat(subnet_id=subnets['Public'].id, key_name=key.name, env_tag='prd')
+
+    # Create Private Route Table
+    private_route_table = vpc_conn.create_route_table(vpc_id=vpc.id)
+    print('Private Route Table {} created'.format(private_route_table.id))
+    private_route_table.add_tag('Name', 'Private Route Table')
+    vpc_conn.create_route(route_table_id=private_route_table.id, destination_cidr_block='0.0.0.0/0',
+                          instance_id=nat_instance.id)
+    print('Private Route created')
+    # Associate the public subnet
+    vpc_conn.associate_route_table(route_table_id=private_route_table.id, subnet_id=subnets['Private'].id)
 
 
 def build_ha_vpc(cidr, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -98,7 +153,7 @@ def aws_create_internet_gateway(vpc_id, aws_id=None or AWS_ID, aws_key=None or A
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpc_internet_gateway = vpc_conn.create_internet_gateway()
     vpc_conn.attach_internet_gateway(vpc_internet_gateway.id, vpc_id=vpc_id)
-    vpc_internet_gateway.add_tag("Name", "Global Internet Gateway")
+    vpc_internet_gateway.add_tag("Name", "Internet Gateway" )
 
 
 def aws_make_subnet_public(vpc_id, ig_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -147,22 +202,14 @@ def aws_create_instance(ec2_conn, name, image_id, key_name, type_id, subnet_id, 
     return instance
 
 
-def aws_create_global_nat_instance(subnet_id, key_name, env, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
-                                   region=None or REGION):
+def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Create a single NAT instance in the target subnet
-    :param subnet_id:
-    :param key_name:
-    :param env:
-    :param aws_id:
-    :param aws_key:
-    :param region:
-    :return:
     """
     # Retrive subnet
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     subnet = vpc_conn.get_all_subnets(subnet_ids=[subnet_id])[0]
-    # Check if there is a NAT Security Group into the VPC
+    # Check if there is a suitable NAT Security Group into the VPC
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     security_groups = ec2_conn.get_all_security_groups()
     nat_security_group = [x for x in security_groups if 'NAT_SG' in x.name][0]
@@ -189,7 +236,7 @@ def aws_create_global_nat_instance(subnet_id, key_name, env, aws_id=None or AWS_
     nat_instance = nat_reservation.instances[0]
     # Check how many NAT instances already running
     nat_instances = ec2_conn.get_all_instances(filters={'tag:Name': 'nat*'})
-    nat_instance_name = 'nat.' + str(len(nat_instances) + 1).zfill(3) + '.' + env + '.' +\
+    nat_instance_name = 'nat.' + str(len(nat_instances) + 1).zfill(3) + '.' + env_tag + '.' +\
                         subnet.availability_zone + '.archondronistics.lan'
     nat_instance.add_tag('Name', nat_instance_name)
     # Check if the instance is ready
@@ -213,11 +260,13 @@ def aws_create_global_nat_instance(subnet_id, key_name, env, aws_id=None or AWS_
                                                            nat_instance.ip_address)))
     # Disabling Source/Destination Checks
     ec2_conn.modify_instance_attribute(instance_id=nat_instance.id, attribute='sourceDestCheck', value='False')
+
     # Updating the Main Route Table
-    route_table = vpc_conn.get_all_route_tables(filters={'tag:Name': 'Global Private*'})[0]
-    vpc_conn.create_route(route_table_id=route_table.id, destination_cidr_block='0.0.0.0/0',
-                          instance_id=nat_instance.id)
+    # route_table = vpc_conn.get_all_route_tables(filters={'tag:Name': 'Global Private*'})[0]
+    # vpc_conn.create_route(route_table_id=route_table.id, destination_cidr_block='0.0.0.0/0',
+    #                       instance_id=nat_instance.id)
     #TODO: Test NAT
+    return nat_instance
 
 
 def spin_saltmaster(subnet_id, key_string, op_system=None or DEFAULT_OS, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
