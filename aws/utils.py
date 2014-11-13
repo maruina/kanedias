@@ -49,8 +49,7 @@ def calculate_public_private_cidr(vpc_cidr, av_zones):
     vpc_subnets = list(vpc_network.subnet(subnets_maks_bits))
     subnet_dict = {}
     for counter, subnet in enumerate(subnet_tags):
-        subnet_name = subnet_tags[counter] + ' ' + av_zones[counter].name
-        subnet_dict[subnet_name] = {
+        subnet_dict[subnet] = {
             'Network': vpc_subnets[counter],
             'Zone': av_zones[counter]
         }
