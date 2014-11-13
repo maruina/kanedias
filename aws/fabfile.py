@@ -301,7 +301,7 @@ def build_private_hosted_zone(vpc_id, domain_name, aws_id=None or AWS_ID, aws_ke
 
 def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
-    Install salt minion on target instance_id
+    Install salt minion on target instance_id. Assumpition: only one Salt Master per VPC
     :param instance_id:
     :param aws_id:
     :param aws_key:
@@ -318,7 +318,7 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
     else:
         instance = reservations[0].instances[0]
 
-    print('Instance {} ({})'.format(instance.tags['Name'], instance.id))
+    print('Installing salt on instance {} ({})'.format(instance.tags['Name'], instance.id))
 
     # Find the saltmaster
     saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*'})
@@ -327,35 +327,58 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
         sys.exit(1)
     else:
         saltmaster = saltmaster_reservations[0].instances[0]
-    saltmaster_ssh_key = DEFAULT_SSH_DIR + saltmaster.key_name + '.pem'
-    saltmaster_private_ip = saltmaster.private_ip_address
-    saltmaster_ssh_user = find_ssh_user(instance_id=saltmaster.id, ec2_conn=ec2_conn)
+        saltmaster_ssh_key = DEFAULT_SSH_DIR + saltmaster.key_name + '.pem'
+        saltmaster_private_ip = saltmaster.private_ip_address
+        saltmaster_ssh_user = find_ssh_user(instance_id=saltmaster.id, ec2_conn=ec2_conn)
 
     # Find the NAT parameters
     nat_instance = find_subnet_nat_instance(subnet_id=instance.subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
     if not nat_instance:
-        print(red('Error, NAT instance not found'))
+        print(red('Error, NAT instance for instance {} not found'.format(instance.id)))
         sys.exit(1)
     else:
         nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
 
-    # Generate a Salt Master accepted key and download it
-    with settings(gateway=nat_instance.ip_address, host_string=saltmaster_ssh_user + '@' + saltmaster_private_ip,
-                  user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
-        sudo('salt-key --gen-keys=' + instance.tags['Name'])
-        sudo('mkdir /etc/salt/pki/master/minions/' + instance.tags['Name'])
-        sudo('cp ' + instance.tags['Name'] + '.pub /etc/salt/pki/master/minions/' + instance.tags['Name'] + '/')
-        get('/root/' + instance.tags['Name'] + '.pem', DEFAULT_FILE_DIR)
-        get('/root/' + instance.tags['Name'] + '.pub', DEFAULT_FILE_DIR)
+    instance_name = instance.tags['Name']
+    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
 
-    ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    # Test if salt is already installed
+    with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
+                  user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True, warn_only=True):
+        result = sudo('command -v salt-call')
+        if result == 0:
+            print(green('Salt already installed on instance {} ({})'.format(instance_name, instance.id)))
+            sys.exit(0)
+        else:
+            print('Installing salt...')
 
-    # Connect to the instance
-    # Do I have public IP?
-    if instance.ip_address:
-        ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
-        with settings(host_string=instance.ip_address, user=ssh_user, key_filename=ssh_key):
-            pass
-    else:
-        # I need to find the NAT instance public IP associated with my instance
-        pass
+            salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
+            bootstrap_script = salt_script_folder + '/bootstrap_saltminion.sh'
+
+            # Generate a Salt Master accepted key and download it if you don't have it
+            if os.path.isfile(salt_script_folder + '/' + instance_name + '.pub') and \
+                    os.path.isfile(salt_script_folder + '/' + instance_name + '.pem'):
+                print('Key already generated')
+            else:
+                with settings(gateway=nat_instance.ip_address, host_string=saltmaster_ssh_user + '@' + saltmaster_private_ip,
+                              user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
+                    sudo('salt-key --gen-keys=' + instance_name)
+                    sudo('mkdir /etc/salt/pki/master/minions/' + instance_name)
+                    sudo('cp ' + instance_name + '.pub /etc/salt/pki/master/minions/' + instance_name + '/')
+                    get('/root/' + instance_name + '.pem', DEFAULT_FILE_DIR)
+                    get('/root/' + instance_name + '.pub', DEFAULT_FILE_DIR)
+                    print('Minion key generated and downloaded in {}'.format(DEFAULT_FILE_DIR))
+
+            # Connect to the instance, bootstrap salt and install the keys
+            with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
+                          user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
+                put(local_path=bootstrap_script, remote_path='/root/', mode=0700, use_sudo=True)
+                sudo('/root/bootstrap_saltminion.sh')
+                sudo('service salt-minion stop')
+                put(local_path=DEFAULT_FILE_DIR + instance_name + '.pem',
+                    remote_path='/etc/salt/pki/minion/' + instance_name + '.pem', use_sudo=True)
+                put(local_path=DEFAULT_FILE_DIR + instance_name + '.pub',
+                    remote_path='/etc/salt/pki/minion/' + instance_name + '.pub', use_sudo=True)
+                sudo('service salt-minion start')
+                sudo('salt-call state.highstate')
