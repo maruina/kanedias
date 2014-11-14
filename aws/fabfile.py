@@ -295,8 +295,8 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
 
 
 def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op_system=None or 'CentOS',
-                  instance_type=None or 't2.micro', aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
-                  region=None or REGION):
+                  instance_type=None or 't2.micro', internal_domain=None or DEFAULT_INTERNAL_DOMAIN,
+                  aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Spin a generic instance
     :param instance_tag:
@@ -326,6 +326,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
         if 'WEB' in instance_tag.upper():
             instance_security_group.authorize(ip_protocol='tcp', from_port=80, to_port=80, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=443, to_port=443, cidr_ip='0.0.0.0/0')
+        print('Security group {} created'.format(instance_security_group.id))
     else:
         # Use the secuirty group
         if len(security_groups) > 1:
@@ -335,46 +336,51 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
             sys.exit(1)
         else:
             instance_security_group = security_groups[0]
+            print("Security group {} selected".format(instance_security_group.id))
 
-        keys = [k for k in ec2_conn.get_all_key_pairs() if key_name in k.name]
-        if not keys:
-            print(red('Error, there is no key with the string {}. Be more specific'.format(key_name)))
-            sys.exit(1)
-        elif len(keys) > 2:
-            print(red('Error, there is more than one key based on your choice. Be more specific'))
-            for k in keys:
-                print('\t{}'.format(k.name))
+    keys = [k for k in ec2_conn.get_all_key_pairs() if key_name in k.name]
+    if not keys:
+        print(red('Error, there is no key with the string {}. Be more specific'.format(key_name)))
+        sys.exit(1)
+    elif len(keys) > 2:
+        print(red('Error, there is more than one key based on your choice. Be more specific'))
+        for k in keys:
+            print('\t{}'.format(k.name))
+    else:
+        instance_key = keys[0]
+        print('Key {} selected'.format(instance_key.name))
+
+    # How many instance of this type already running?
+    instances = ec2_conn.get_all_instances(filters={'tag:Name': instance_tag + '*'})
+    instance_name = instance_tag + '.' + env_tag + '.' + str(len(instances) + 1).zfill(3) + '.' +\
+                    subnet.availability_zone + '.' + DEFAULT_INTERNAL_DOMAIN
+
+    print('Creating instance {}'.format(instance_name))
+
+    instance = aws_create_instance(ec2_conn=ec2_conn, name=instance_name,
+                                   image_id=AMI_LIST[op_system]['regions'][region],
+                                   key_name=instance_key.name,
+                                   type_id=instance_type, subnet_id=subnet.id,
+                                   security_group_ids=instance_security_group.id)
+
+    # Check if the subnet is Public or Private
+    if 'Private' in subnet.tags['Name']:
+        print("Instance in private subnet with IP {}".format(instance.private_ip_address))
+    elif 'Public' in subnet.tags['Name']:
+        elastic_ips = ec2_conn.get_all_addresses()
+        if len(elastic_ips) > 5:
+            print(red("You don't have any Elastic IP available"))
+            print("Your public instance is without a public IP")
         else:
-            instance_key = keys[0]
+            new_ip = ec2_conn.allocate_address()
+            ec2_conn.associate_address(instance_id=instance.id, public_ip=new_ip.public_ip)
+            time.sleep(3)
+            instance.update()
+            print(green("Instance {} [{}] accessible at {}".format(instance_name, instance.id,
+                                                                   instance.ip_address)))
 
-        # How many instance of this type already running?
-        instances = ec2_conn.get_all_instances(filters={'tag:Name': instance_tag + '*'})
-        instance_name = instance_tag + '.' + env_tag + '.' + str(len(instances) + 1).zfill(3) + '.' +\
-                        subnet.availability_zone + '.' + DEFAULT_INTERNAL_DOMAIN
+    #TODO: Add the DNS entry
 
-        print('Creating instance {}'.format(instance_name))
-
-        instance = aws_create_instance(ec2_conn=ec2_conn, name=instance_name,
-                                       image_id=AMI_LIST[op_system]['regions'][region],
-                                       key_name=instance_key.name,
-                                       type_id=instance_type, subnet_id=subnet.id,
-                                       security_group_ids=instance_security_group.id)
-
-        # Check if the subnet is Public or Private
-        if 'Private' in subnet.tags['Name']:
-            print("Instance in private subnet with IP {}".format(instance.private_ip_address))
-        elif 'Public' in subnet.tags['Name']:
-            elastic_ips = ec2_conn.get_all_addresses()
-            if len(elastic_ips) > 5:
-                print(red("You don't have any Elastic IP available"))
-                print("Your public instance is without a public IP")
-            else:
-                new_ip = ec2_conn.allocate_address()
-                ec2_conn.associate_address(instance_id=instance.id, public_ip=new_ip.public_ip)
-                time.sleep(3)
-                instance.update()
-                print(green("Instance {} [{}] accessible at {}".format(instance_name, instance.id,
-                                                                       instance.ip_address)))
     print(green("Instance {} spinned!".format(instance.id)))
 
 
@@ -444,10 +450,14 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
                               user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
                     sudo('salt-key --gen-keys=' + instance_name)
                     sudo('cp ' + instance_name + '.pub /etc/salt/pki/master/minions/')
+                    sudo('mv /etc/salt/pki/master/minions/' + instance_name + '.pub /etc/salt/pki/master/minions/' +
+                         instance_name)
                     get('/root/' + instance_name + '.pem', DEFAULT_FILE_DIR)
                     get('/root/' + instance_name + '.pub', DEFAULT_FILE_DIR)
                     print('Minion key generated and downloaded in {}'.format(DEFAULT_FILE_DIR))
 
+            # Add this line otherwise SSH connection fails
+            time.sleep(5)
             # Connect to the instance, bootstrap salt and install the keys
             with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
                           user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
