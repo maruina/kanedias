@@ -9,11 +9,17 @@ from fabric.colors import red, green
 from fabric.api import run, sudo, cd, put, get
 from fabric.context_managers import settings
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR,\
-    DEFAULT_FILE_DIR
+    DEFAULT_FILE_DIR, DEFAULT_INTERNAL_DOMAIN
 from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, find_subnet_nat_instance
 
 
 def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    """
+    Print all VPCs and Subnets
+    :param aws_id: Amazon Access Key ID
+    :param aws_key: Amazon Secret Access Key
+    :param region: Target region for the VPC
+    """
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     vpcs = vpc_conn.get_all_vpcs()
     print('You have {} VPC in region {} [{}]'.format(len(vpcs), AWS_REGIONS[region], region))
@@ -26,15 +32,12 @@ def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None 
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
 
-def print_instances_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
-    pass
-
-
 def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Create a VPC with one private and one public subnet, in 2 different availability zones chosed at random
     :param cidr: The CIDR for your VPC; min /16, max /28
-    :param key_user:
+    :param key_user: The name of the AWS PEM key user
+    :param domain_name: the domain name for your internal DNS resolution in the DHCP option
     :param aws_id: Amazon Access Key ID
     :param aws_key: Amazon Secret Access Key
     :param region: Target region for the VPC
@@ -280,22 +283,88 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
     print('Public IP to connect to: {}'.format(nat_instance.ip_address))
 
     conn_key = DEFAULT_SSH_DIR + saltmaster_instance.key_name + '.pem'
-    script = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack')) +\
-             '/bootstrap_saltmaster.sh'
+    salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
+    bootstrap_script = salt_script_folder + '/bootstrap_saltmaster.sh'
 
     with settings(gateway=nat_instance.ip_address, host_string='root@'+saltmaster_instance.private_ip_address, user=AMI_USER[op_system],
                   key_filename=conn_key, forward_agent=True), cd('/root'):
         # run('uname -a')
-        put(script, mode=0700)
+        put(bootstrap_script, mode=0700)
         run('./bootstrap_saltmaster.sh')
         run('service iptables stop')
 
 
-def build_private_hosted_zone(vpc_id, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
-                              region=None or REGION):
-    route53_conn = boto.route53.connect_to_region(region_name=region, aws_access_key_id=aws_id,
-                                                  aws_secret_access_key=aws_key)
-    #TODO: manca l'opzione per private_hosted_zone
+def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op_system=None or 'CentOS',
+                  instance_type=None or 't2.micro', aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
+                  region=None or REGION):
+    """
+    Spin a generic instance
+    :param instance_tag:
+    :param env_tag:
+    :param subnet_id:
+    :param key_name:
+    :param aws_id:
+    :param aws_key:
+    :param region:
+    :return:
+    """
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    subnet = vpc_conn.get_all_subnets(subnet_ids=[subnet_id])[0]
+    vpc = vpc_conn.get_all_vpcs(vpc_ids=subnet.vpc_id)[0]
+
+    security_groups = ec2_conn.get_all_security_groups(filters={'description': security_group.upper() + '*'})
+    if not security_groups:
+        print('You specified a security group that not exists, I will create it')
+        # Create a new security group based on the tag
+        instance_security_group = ec2_conn.create_security_group(instance_tag.upper() + '_SG',
+                                                                 instance_tag.upper() + ' Security Group',
+                                                                 vpc_id=subnet.vpc_id)
+        instance_security_group.add_tag('Name', instance_tag.upper() + ' Security Group')
+        instance_security_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1, cidr_ip=vpc.cidr_block)
+        instance_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip='0.0.0.0/0')
+        if 'WEB' in instance_tag.upper():
+            instance_security_group.authorize(ip_protocol='tcp', from_port=80, to_port=80, cidr_ip='0.0.0.0/0')
+            instance_security_group.authorize(ip_protocol='tcp', from_port=443, to_port=443, cidr_ip='0.0.0.0/0')
+    else:
+        # Use the secuirty group
+        if len(security_groups) > 1:
+            print(red('Error, there is more than one security group based on your choice. Be more specific'))
+            for sg in security_groups:
+                print('\t{} ({})'.format(sg.description, sg.id))
+            sys.exit(1)
+        else:
+            instance_security_group = security_groups[0]
+
+        keys = [k for k in ec2_conn.get_all_key_pairs() if key_name in k.name]
+        if not keys:
+            print(red('Error, there is no key with the string {}. Be more specific'.format(key_name)))
+            sys.exit(1)
+        elif len(keys) > 2:
+            print(red('Error, there is more than one key based on your choice. Be more specific'))
+            for k in keys:
+                print('\t{}'.format(k.name))
+        else:
+            instance_key = keys[0]
+
+        # How many instance of this type already running?
+        instances = ec2_conn.get_all_instances(filters={'tag:Name': instance_tag + '*'})
+        instance_name = instance_tag + '.' + env_tag + '.' + str(len(instances) + 1).zfill(3) + '.' +\
+                        subnet.availability_zone + '.' + DEFAULT_INTERNAL_DOMAIN
+
+        print('Creating instance {}'.format(instance_name))
+
+        instance = aws_create_instance(ec2_conn=ec2_conn, name=instance_name,
+                                       image_id=AMI_LIST[op_system]['regions'][region],
+                                       key_name=instance_key.name,
+                                       type_id=instance_type, subnet_id=subnet.id,
+                                       security_group_ids=instance_security_group.id)
+
+        # Check if the subnet is Public or Private
+        if 'Private' in subnet.tags['Name']:
+            print('Instance in private subnet with IP {}'.format(instance.private_ip_address))
+        elif 'Public' in subnet.tags['Name']:
+            pass
 
 
 def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
