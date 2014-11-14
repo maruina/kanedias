@@ -10,8 +10,7 @@ from fabric.api import run, sudo, cd, put, get
 from fabric.context_managers import settings
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR,\
     DEFAULT_FILE_DIR
-from utils import find_subnet_nat_public_ip, test_vpc_cidr, calculate_public_private_cidr, find_ssh_user,\
-    find_subnet_nat_instance
+from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, find_subnet_nat_instance
 
 
 def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -277,18 +276,19 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
         print('Saltmaster instance {} already running'.format(saltmaster_instance.id))
 
     # Look for the appropriate NAT instance public ip
-    nat_public_ip = find_subnet_nat_public_ip(subnet_id=subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
-    print('Public IP to connect to: {}'.format(nat_public_ip))
+    nat_instance = find_subnet_nat_instance(subnet_id=subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
+    print('Public IP to connect to: {}'.format(nat_instance.ip_address))
 
     conn_key = DEFAULT_SSH_DIR + saltmaster_instance.key_name + '.pem'
     script = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack')) +\
              '/bootstrap_saltmaster.sh'
 
-    with settings(gateway=nat_public_ip, host_string='root@'+saltmaster_instance.private_ip_address, user=AMI_USER[op_system],
+    with settings(gateway=nat_instance.ip_address, host_string='root@'+saltmaster_instance.private_ip_address, user=AMI_USER[op_system],
                   key_filename=conn_key, forward_agent=True), cd('/root'):
         # run('uname -a')
         put(script, mode=0700)
         run('./bootstrap_saltmaster.sh')
+        run('service iptables stop')
 
 
 def build_private_hosted_zone(vpc_id, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
@@ -317,7 +317,11 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
     else:
         instance = reservations[0].instances[0]
 
-    print('Installing salt on instance {} ({})'.format(instance.tags['Name'], instance.id))
+    instance_name = instance.tags['Name']
+    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
+
+    print('Installing salt on instance {} ({})'.format(instance_name, instance.id))
 
     # Find the saltmaster
     saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*'})
@@ -338,10 +342,6 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
     else:
         nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
 
-    instance_name = instance.tags['Name']
-    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
-    instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
-
     # Test if salt is already installed
     with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
                   user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True, warn_only=True):
@@ -356,15 +356,14 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
             bootstrap_script = salt_script_folder + '/bootstrap_saltminion.sh'
 
             # Generate a Salt Master accepted key and download it if you don't have it
-            if os.path.isfile(salt_script_folder + '/' + instance_name + '.pub') and \
-                    os.path.isfile(salt_script_folder + '/' + instance_name + '.pem'):
+            if os.path.isfile(DEFAULT_FILE_DIR + instance_name + '.pub') and \
+                    os.path.isfile(DEFAULT_FILE_DIR + instance_name + '.pem'):
                 print('Key already generated')
             else:
                 with settings(gateway=nat_instance.ip_address, host_string=saltmaster_ssh_user + '@' + saltmaster_private_ip,
                               user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
                     sudo('salt-key --gen-keys=' + instance_name)
-                    sudo('mkdir /etc/salt/pki/master/minions/' + instance_name)
-                    sudo('cp ' + instance_name + '.pub /etc/salt/pki/master/minions/' + instance_name + '/')
+                    sudo('cp ' + instance_name + '.pub /etc/salt/pki/master/minions/')
                     get('/root/' + instance_name + '.pem', DEFAULT_FILE_DIR)
                     get('/root/' + instance_name + '.pub', DEFAULT_FILE_DIR)
                     print('Minion key generated and downloaded in {}'.format(DEFAULT_FILE_DIR))
@@ -375,11 +374,18 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
                 put(local_path=bootstrap_script, remote_path='/root/', mode=0700, use_sudo=True)
                 sudo('/root/bootstrap_saltminion.sh')
                 sudo('service salt-minion stop')
+                sudo('mv /etc/salt/pki/minion/minion.pem /etc/salt/pki/minion/minion.pem.bkp')
+                sudo('mv /etc/salt/pki/minion/minion.pub /etc/salt/pki/minion/minion.pub.bkp')
+                sudo('echo ' + instance_name + ' > /etc/salt/minion_id')
                 put(local_path=DEFAULT_FILE_DIR + instance_name + '.pem',
                     remote_path='/etc/salt/pki/minion/' + instance_name + '.pem', use_sudo=True)
                 put(local_path=DEFAULT_FILE_DIR + instance_name + '.pub',
                     remote_path='/etc/salt/pki/minion/' + instance_name + '.pub', use_sudo=True)
+                sudo('mv /etc/salt/pki/minion/' + instance_name + '.pem' + ' /etc/salt/pki/minion/minion.pem')
+                sudo('mv /etc/salt/pki/minion/' + instance_name + '.pub' + ' /etc/salt/pki/minion/minion.pub')
                 sudo('service salt-minion start')
+
+                # Test if salt can communicate with the master
                 with settings(warn_only=True):
                     if sudo('salt-call state.highstate') == 0:
                         print(green('Salt succesfully installed!'))

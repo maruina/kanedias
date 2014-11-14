@@ -1,6 +1,9 @@
 [Credentials]
-aws_access_key_id = YOUR_AMAZON_KEY_ID
-aws_secret_access_key = YOR_AMAZON_ACCESS_KEY
+aws_access_key_id = YOUR AWS ID
+aws_secret_access_key = YOUR AWS KEY
+region = REGION CODE YOU WANT WORK WITH, for example eu-west-1. Look for the region code in AWS_REGIONS dict
 
-[Settings]
-region = YOUR_REGION
+[Config]
+default_os = CentOS or Debian or Ubuntu. Look for the OS string in AMI_LIST dict
+default_ssh_dir = /xxx/yyy/zzz is the directory where you have your aws ssh pem files
+default_file_dir = /xxx/yyy/zzz is the directory where you have the files you want to upload and the download directory

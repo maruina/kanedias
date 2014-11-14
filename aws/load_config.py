@@ -11,11 +11,15 @@ if os.path.exists('config.ini'):
         AWS_ID = boto_config.get('Credentials', 'aws_access_key_id')
         AWS_KEY = boto_config.get('Credentials', 'aws_secret_access_key')
         REGION = boto_config.get('Credentials', 'region')
-        DEFAULT_OS = boto_config.get('Credentials', 'default_os')
-        DEFAULT_SSH_DIR = boto_config.get('Credentials', 'default_ssh_dir')
-        DEFAULT_FILE_DIR = boto_config.get('Credentials', 'default_file_dir')
     else:
         print(red('Error: credentials section is missing, abort!'))
+        sys.exit(1)
+    if boto_config.items('Config'):
+        DEFAULT_OS = boto_config.get('Config', 'default_os')
+        DEFAULT_SSH_DIR = boto_config.get('Config', 'default_ssh_dir')
+        DEFAULT_FILE_DIR = boto_config.get('Config', 'default_file_dir')
+    else:
+        print(red('Error: config section is missing, abort!'))
         sys.exit(1)
 else:
     print(red('Error: configuration file missing, abort!'))
