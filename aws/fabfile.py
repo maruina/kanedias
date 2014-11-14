@@ -362,9 +362,20 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
 
         # Check if the subnet is Public or Private
         if 'Private' in subnet.tags['Name']:
-            print('Instance in private subnet with IP {}'.format(instance.private_ip_address))
+            print("Instance in private subnet with IP {}".format(instance.private_ip_address))
         elif 'Public' in subnet.tags['Name']:
-            pass
+            elastic_ips = ec2_conn.get_all_addresses()
+            if len(elastic_ips) > 5:
+                print(red("You don't have any Elastic IP available"))
+                print("Your public instance is without a public IP")
+            else:
+                new_ip = ec2_conn.allocate_address()
+                ec2_conn.associate_address(instance_id=instance.id, public_ip=new_ip.public_ip)
+                time.sleep(3)
+                instance.update()
+                print(green("Instance {} [{}] accessible at {}".format(instance_name, instance.id,
+                                                                       instance.ip_address)))
+    print(green("Instance {} spinned!".format(instance.id)))
 
 
 def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
