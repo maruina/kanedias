@@ -1,4 +1,5 @@
-from fabric.colors import red
+import time
+from fabric.colors import red, green
 from netaddr import IPNetwork
 
 
@@ -89,3 +90,22 @@ def get_zone_id(route53_conn, domain_name):
         zone_id = zone['GetHostedZoneResponse']['HostedZone']['Id'].replace('/hostedzone/', '')
         return zone_id
 
+
+def create_instance(ec2_conn, name, image_id, key_name, type_id, subnet_id, security_group_ids):
+    instance_reservation = ec2_conn.run_instances(image_id=image_id, key_name=key_name, instance_type=type_id,
+                                                  subnet_id=subnet_id, security_group_ids=[security_group_ids])
+    print(instance_reservation)
+    instance = instance_reservation.instances[0]
+    print(instance)
+    instance.add_tag('Name', name)
+    # Check if the instance is ready
+    print('Waiting for instance to start...')
+    status = instance.update()
+    while status == 'pending':
+        time.sleep(10)
+        status = instance.update()
+    if status == 'running':
+        print(green('New instance {} ready with private IP {}'.format(instance.id, instance.private_ip_address)))
+    else:
+        print('Instance status: ' + status)
+    return instance

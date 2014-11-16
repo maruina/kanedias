@@ -11,7 +11,8 @@ from fabric.api import run, sudo, cd, put, get
 from fabric.context_managers import settings
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR,\
     DEFAULT_FILE_DIR, DEFAULT_INTERNAL_DOMAIN
-from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, find_subnet_nat_instance, get_zone_id
+from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, find_subnet_nat_instance, get_zone_id,\
+    create_instance
 
 
 def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -135,26 +136,6 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
     print(red('Remember to create manually the Private Hosted Zone {}'.format(domain_name)))
 
 
-def aws_create_instance(ec2_conn, name, image_id, key_name, type_id, subnet_id, security_group_ids):
-    instance_reservation = ec2_conn.run_instances(image_id=image_id, key_name=key_name, instance_type=type_id,
-                                                  subnet_id=subnet_id, security_group_ids=[security_group_ids])
-    print(instance_reservation)
-    instance = instance_reservation.instances[0]
-    print(instance)
-    instance.add_tag('Name', name)
-    # Check if the instance is ready
-    print('Waiting for instance to start...')
-    status = instance.update()
-    while status == 'pending':
-        time.sleep(10)
-        status = instance.update()
-    if status == 'running':
-        print(green('New instance {} ready with private IP {}'.format(instance.id, instance.private_ip_address)))
-    else:
-        print('Instance status: ' + status)
-    return instance
-
-
 def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Spin a NAT instance in the target subnet
@@ -272,10 +253,10 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
         saltmaster_key = [x for x in ec2_conn.get_all_key_pairs() if key_user in x.name][0]
 
         # Run the instance
-        saltmaster_instance = aws_create_instance(ec2_conn=ec2_conn, name=saltmaster_name,
-                                                  image_id=AMI_LIST[op_system]['regions'][region],
-                                                  key_name=saltmaster_key.name, type_id='t2.micro', subnet_id=subnet.id,
-                                                  security_group_ids=saltmaster_security_group.id)
+        saltmaster_instance = create_instance(ec2_conn=ec2_conn, name=saltmaster_name,
+                                              image_id=AMI_LIST[op_system]['regions'][region],
+                                              key_name=saltmaster_key.name, type_id='t2.micro', subnet_id=subnet.id,
+                                              security_group_ids=saltmaster_security_group.id)
     else:
         saltmaster_instance = saltmaster_reservations[0].instances[0]
         print('Saltmaster instance {} already running'.format(saltmaster_instance.id))
@@ -360,11 +341,11 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
 
     print('Creating instance {}'.format(instance_name))
 
-    instance = aws_create_instance(ec2_conn=ec2_conn, name=instance_name,
-                                   image_id=AMI_LIST[op_system]['regions'][region],
-                                   key_name=instance_key.name,
-                                   type_id=instance_type, subnet_id=subnet.id,
-                                   security_group_ids=instance_security_group.id)
+    instance = create_instance(ec2_conn=ec2_conn, name=instance_name,
+                               image_id=AMI_LIST[op_system]['regions'][region],
+                               key_name=instance_key.name,
+                               type_id=instance_type, subnet_id=subnet.id,
+                               security_group_ids=instance_security_group.id)
 
     # Check if the subnet is Public or Private
     if 'Private' in subnet.tags['Name']:
@@ -501,3 +482,7 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
                         print(green('Salt succesfully installed!'))
                     else:
                         print(red('Error, cannot execute salt-call'))
+
+
+def nuke_instance():
+    pass
