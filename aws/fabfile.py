@@ -33,7 +33,8 @@ def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None 
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
 
-def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
+                             region=None or REGION):
     """
     Create a VPC with one private and one public subnet, in 2 different availability zones chosed at random
     :param cidr: The CIDR for your VPC; min /16, max /28
@@ -464,8 +465,8 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
                     os.path.isfile(DEFAULT_FILE_DIR + instance_name + '.pem'):
                 print('Key already generated')
             else:
-                with settings(gateway=nat_instance.ip_address, host_string=saltmaster_ssh_user + '@' + saltmaster_private_ip,
-                              user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
+                with settings(gateway=nat_instance.ip_address, host_string=saltmaster_ssh_user + '@' +
+                        saltmaster_private_ip, user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
                     sudo('salt-key --gen-keys=' + instance_name)
                     sudo('cp ' + instance_name + '.pub /etc/salt/pki/master/minions/')
                     sudo('mv /etc/salt/pki/master/minions/' + instance_name + '.pub /etc/salt/pki/master/minions/' +
@@ -476,9 +477,10 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
 
             # Add this line otherwise SSH connection fails
             time.sleep(5)
+
             # Connect to the instance, bootstrap salt and install the keys
-            with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
-                          user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
+            with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' +
+                    instance.private_ip_address, user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
                 put(local_path=bootstrap_script, remote_path='/root/', mode=0700, use_sudo=True)
                 sudo('/root/bootstrap_saltminion.sh')
                 sudo('service salt-minion stop')
