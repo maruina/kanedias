@@ -4,13 +4,14 @@ import time
 import boto.ec2
 import boto.vpc
 import boto.route53
+import boto.route53.record
 from socket import gethostbyname
 from fabric.colors import red, green
 from fabric.api import run, sudo, cd, put, get
 from fabric.context_managers import settings
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR,\
     DEFAULT_FILE_DIR, DEFAULT_INTERNAL_DOMAIN
-from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, find_subnet_nat_instance
+from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, find_subnet_nat_instance, get_zone_id
 
 
 def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -346,6 +347,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
         print(red('Error, there is more than one key based on your choice. Be more specific'))
         for k in keys:
             print('\t{}'.format(k.name))
+        sys.exit(1)
     else:
         instance_key = keys[0]
         print('Key {} selected'.format(instance_key.name))
@@ -379,7 +381,23 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
             print(green("Instance {} [{}] accessible at {}".format(instance_name, instance.id,
                                                                    instance.ip_address)))
 
-    #TODO: Add the DNS entry
+    # Add the DNS entry
+    route53_conn = boto.route53.connect_to_region(region_name=region, aws_access_key_id=aws_id,
+                                                  aws_secret_access_key=aws_key)
+    zone_id = get_zone_id(route53_conn=route53_conn, domain_name=internal_domain)
+    if not zone_id:
+        print(red("Error, can't find the domain {}".format(internal_domain)))
+        print("Instance spinnded successfully but the DNS record creation failed")
+        sys.exit(1)
+    else:
+        zone_changes = boto.route53.record.ResourceRecordSets(route53_conn, zone_id)
+        a_record = zone_changes.add_change(action='CREATE', name=internal_domain, type='A')
+        a_record.add_value(instance.private_ip_address)
+        result = zone_changes.commit()
+        result.update()
+        while 'PENDING' in result.update():
+            print("Propagating DNS record...")
+            time.sleep(5)
 
     print(green("Instance {} spinned!".format(instance.id)))
 

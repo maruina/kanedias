@@ -73,3 +73,19 @@ def calculate_public_private_cidr(vpc_cidr, av_zones):
         }
     return subnet_dict
 
+
+def get_zone_id(route53_conn, domain_name):
+    """
+    Find the Zone ID based on the Zone Name
+    :param route53_conn:
+    :param domain_name:
+    :return: The Zone ID otherwise None
+    """
+    zone = route53_conn.get_hosted_zone_by_name(hosted_zone_name=domain_name)
+    if not zone:
+        print(red("Error, domain {} does not exist".format(domain_name)))
+        return None
+    else:
+        zone_id = zone['GetHostedZoneResponse']['HostedZone']['Id'].replace('/hostedzone/', '')
+        return zone_id
+
