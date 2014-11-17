@@ -5,6 +5,7 @@ include:
 
 nginx_service:
   service.running:
+    - name: {{ nginx.lookup.service }}
     - enable: True
     - reload: True
     - watch:
