@@ -8,7 +8,5 @@ nginx_service:
     - name: {{ nginx.lookup.service }}
     - enable: True
     - reload: True
-    - watch:
-      - pkg: {{ nginx.lookup.package }}
     - require:
       - sls: nginx.install
