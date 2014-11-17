@@ -92,6 +92,17 @@ def get_zone_id(route53_conn, domain_name):
 
 
 def create_instance(ec2_conn, name, image_id, key_name, type_id, subnet_id, security_group_ids):
+    """
+    Create an EC2 instance based on the given parameters
+    :param ec2_conn:
+    :param name:
+    :param image_id:
+    :param key_name:
+    :param type_id:
+    :param subnet_id:
+    :param security_group_ids:
+    :return:
+    """
     instance_reservation = ec2_conn.run_instances(image_id=image_id, key_name=key_name, instance_type=type_id,
                                                   subnet_id=subnet_id, security_group_ids=[security_group_ids])
     print(instance_reservation)
