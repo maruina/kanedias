@@ -1,7 +1,7 @@
 {% from 'nginx/map.jinja' import nginx with context %}
 
 include:
-  - ngnix.install
+  - nginx.install
 
 nginx_service:
   service.running:
