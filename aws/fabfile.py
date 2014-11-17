@@ -7,7 +7,7 @@ import boto.route53
 import boto.route53.record
 from socket import gethostbyname
 from fabric.colors import red, green
-from fabric.api import run, sudo, cd, put, get
+from fabric.api import run, sudo, cd, put, get, task
 from fabric.context_managers import settings
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR,\
     DEFAULT_FILE_DIR, DEFAULT_INTERNAL_DOMAIN
@@ -15,6 +15,7 @@ from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, f
     create_instance
 
 
+@task
 def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Print all VPCs and Subnets
@@ -33,7 +34,7 @@ def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None 
             for subnet in subnets:
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
-
+@task
 def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                              region=None or REGION):
     """
@@ -135,7 +136,7 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
     print(green('VPC succesfully created!'))
     print(red('Remember to create manually the Private Hosted Zone {}'.format(domain_name)))
 
-
+@task
 def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Spin a NAT instance in the target subnet
@@ -208,7 +209,7 @@ def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None o
     #TODO: Test NAT
     return nat_instance
 
-
+@task
 def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                     region=None or REGION):
     """
@@ -276,7 +277,7 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
         run('./bootstrap_saltmaster.sh')
         run('service iptables stop')
 
-
+@task
 def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op_system=None or 'CentOS',
                   instance_type=None or 't2.micro', internal_domain=None or DEFAULT_INTERNAL_DOMAIN,
                   aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
@@ -336,6 +337,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
 
     # How many instance of this type already running?
     instances = ec2_conn.get_all_instances(filters={'tag:Name': instance_tag + '*'})
+    # Instance name: web.prd.001.eu-west-1a.example.com
     instance_name = instance_tag + '.' + env_tag + '.' + str(len(instances) + 1).zfill(3) + '.' +\
                     subnet.availability_zone + '.' + DEFAULT_INTERNAL_DOMAIN
 
@@ -384,6 +386,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
     print(green("Instance {} spinned!".format(instance.id)))
 
 
+@task
 def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Install salt minion on target instance_id. Assumpition: only one Salt Master per VPC
@@ -486,3 +489,40 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
 
 def nuke_instance():
     pass
+
+
+@task
+def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
+                      region=None or REGION):
+
+    # Check if the instance exists
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    reservations = ec2_conn.get_all_instances(instance_ids=[instance_id])
+    if not reservations:
+        print(red('Error, instance {} does not exitst'.format(instance_id)))
+        sys.exit(1)
+    else:
+        instance = reservations[0].instances[0]
+
+    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
+
+    # Find the NAT parameters
+    nat_instance = find_subnet_nat_instance(subnet_id=instance.subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
+    if not nat_instance:
+        print(red('Error, NAT instance for instance {} not found'.format(instance.id)))
+        sys.exit(1)
+    else:
+        nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
+
+    with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
+                  user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
+        salt_files_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
+        sudo("rm -rf /srv/salt")
+        sudo("rm -rf /srv/pillar")
+        put(local_path=salt_files_folder + '/salt', remote_path=dest_dir, use_sudo=True)
+        put(local_path=salt_files_folder + '/pillar', remote_path=dest_dir, use_sudo=True)
+        sudo("salt '*' saltutil.refresh_pillar")
+
+    print(green("Salt files updated"))
