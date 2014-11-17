@@ -1,0 +1,25 @@
+{% set nginx = salt['pillar.get']('nginx', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'nginx',
+            'service': 'nginx',
+            'webuser': 'www-data',
+            'conf_file': '/etc/nginx/nginx.conf',
+            'vhost_available': '/etc/nginx/sites-available',
+            'vhost_enabled': '/etc/nginx/sites-enabled',
+            'vhost_use_symlink': True,
+        },
+        'RedHat': {
+            'package': 'nginx',
+            'service': 'nginx',
+            'webuser': 'nginx',
+            'conf_file': '/etc/nginx/nginx.conf',
+            'vhost_available': '/etc/nginx/conf.d',
+            'vhost_enabled': '/etc/nginx/conf.d',
+            'vhost_use_symlink': False,
+        },
+    }, default='RedHat' ),
+    'server': {
+        'example_files': False
+    },
+}, merge=True) %}
