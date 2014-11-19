@@ -1,0 +1,6 @@
+nginx:
+  website:
+    name: archon_website
+    type: php
+    server_name: www.archondronistics.com
+    root_dir: /var/www/ad_wordpress
