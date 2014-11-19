@@ -9,7 +9,6 @@ root_dir=/root
 # Install wget if missing
 if [[ ${wget} ]]; then
     echo 'wget already installed'
-
 else
     if [[ ${yum} ]]; then
         yum install -y wget

@@ -34,6 +34,7 @@ def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None 
             for subnet in subnets:
                 print('\tSubnet: {} - CIDR: {} - {}'.format(subnet.id, subnet.cidr_block, subnet.tags['Name']))
 
+
 @task
 def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                              region=None or REGION):
@@ -136,6 +137,7 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
     print(green('VPC succesfully created!'))
     print(red('Remember to create manually the Private Hosted Zone {}'.format(domain_name)))
 
+
 @task
 def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
@@ -209,6 +211,7 @@ def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None o
     #TODO: Test NAT
     return nat_instance
 
+
 @task
 def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                     region=None or REGION):
@@ -276,6 +279,7 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
         put(bootstrap_script, mode=0700)
         run('./bootstrap_saltmaster.sh')
         run('service iptables stop')
+
 
 @task
 def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op_system=None or 'CentOS',
@@ -526,3 +530,8 @@ def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_I
         sudo("salt '*' saltutil.refresh_pillar")
 
     print(green("Salt files updated"))
+
+
+@task
+def restore_wordpress():
+    pass
