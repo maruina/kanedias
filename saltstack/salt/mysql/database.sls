@@ -7,9 +7,9 @@
   mysql_database.present:
     - name: {{ database }}
     - host: localhost
-        - connection_host: localhost
-        - connection_port: 3306
-        - connection_user: root
-        - connection_pass: {{ mysql_root_pass }}
-        - connection_charset: utf8
+    - connection_host: localhost
+    - connection_port: 3306
+    - connection_user: root
+    - connection_pass: {{ mysql_root_pass }}
+    - connection_charset: utf8
 {% endfor %}

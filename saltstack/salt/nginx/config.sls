@@ -12,8 +12,7 @@
     {% endif %}
 {% endif %}
 
-{% if salt['pillar.get']('nginx:website') %}
-    {% if salt['pillar.get']('nginx:website:php') == 'php' %}
+{% if salt['pillar.get']('nginx:website:type') == 'php' %}
       nginx_website_conf:
         file.managed:
           - name: {{ nginx.lookup.vhost_enabled }}/{{ salt['pillar.get']('nginx:website:name') }}
@@ -24,5 +23,4 @@
           - template: jinja
           - watch_in:
             - service: {{ nginx.lookup.service }}
-    {% endif %}
 {% endif %}

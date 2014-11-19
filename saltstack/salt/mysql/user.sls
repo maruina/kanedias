@@ -18,8 +18,8 @@
 
 
     {% for db in user['databases'] %}
-    {% set privileges_state_id = name ~ '_privileges_' ~ loop.index0 %}:
-    {{ privileges_state_id }}:
+    {% set privileges_state_id = name ~ '_privileges_' ~ loop.index0 %}
+{{ privileges_state_id }}:
   mysql_grants.present:
     - name: {{ name ~ '_' ~ db['database'] ~ '_' ~ db['table'] | default('all') }}
     - grant: {{db['grants']|join(",")}}
