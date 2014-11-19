@@ -12,6 +12,7 @@ else:
     print(red('Error: config file not found!'))
     sys.exit(1)
 
+
 @task
 def wordpress_backup():
     for website in config.sections():
