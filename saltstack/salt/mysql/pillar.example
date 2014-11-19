@@ -11,12 +11,6 @@ mysql:
   database:
     - foo
     - bar
-  schema:
-    foo:
-      load: True
-      source: salt://mysql/files/foo.schema
-    bar:
-      load: False
 
   # Manage users
   # you can get pillar for existent server using import_users.py script
