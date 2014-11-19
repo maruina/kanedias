@@ -5,7 +5,7 @@ include:
 
 php_fpm_service:
   service.running:
-    - name: {{ php.fpm.service }}
+    - name: {{ php.lookup.fpm.service }}
     - enable: True
     - reload: True
     - require:

@@ -1,0 +1,12 @@
+{% set mysql = salt['pillar.get']('mysql', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'mysql'
+        },
+        'RedHat': {
+            'server': 'mysql-server',
+            'server_service': 'nginx',
+            'conf_file': '/etc/mysql/my.cf'
+        },
+    }, default='RedHat' ),
+}, merge=True) %}
