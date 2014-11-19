@@ -20,18 +20,18 @@
     {% for db in user['databases'] %}
     {% set privileges_state_id = name ~ '_privileges_' ~ loop.index0 %}:
     {{ privileges_state_id }}:
-      mysql_grants.present:
-        - name: {{ name ~ '_' ~ db['database'] ~ '_' ~ db['table'] | default('all') }}
-        - grant: {{db['grants']|join(",")}}
-        - database: '{{ db['database'] }}.{{ db['table'] | default('*') }}'
-        - grant_option: {{ db['grant_option'] | default(False) }}
-        - user: {{ name }}
-        - host: '{{ user['host'] }}'
-        - connection_host: localhost
-        - connection_port: 3306
-        - connection_user: root
-        - connection_pass: {{ mysql_root_pass }}
-        - connection_charset: utf8
+  mysql_grants.present:
+    - name: {{ name ~ '_' ~ db['database'] ~ '_' ~ db['table'] | default('all') }}
+    - grant: {{db['grants']|join(",")}}
+    - database: '{{ db['database'] }}.{{ db['table'] | default('*') }}'
+    - grant_option: {{ db['grant_option'] | default(False) }}
+    - user: {{ name }}
+    - host: '{{ user['host'] }}'
+    - connection_host: localhost
+    - connection_port: 3306
+    - connection_user: root
+    - connection_pass: {{ mysql_root_pass }}
+    - connection_charset: utf8
     {% endfor %}
 
 {% endfor %}
