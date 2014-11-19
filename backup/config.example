@@ -1,0 +1,26 @@
+[Wordpress site#1]
+ssh_server: example.com
+ssh_user: root
+ssh_key: /Users/home/key1.pem
+database: wordpress
+mysql_password: password
+wordpress_remote_folder: /var/www/wordpress
+backup_folder: /Users/home/wp_backup_dir
+
+[Wordpress site#2]
+ssh_server: example.com
+ssh_user: root
+ssh_key: /Users/home/key1.pem
+database: wordpress
+mysql_password: password
+wordpress_remote_folder: /var/www/wordpress
+backup_folder: /Users/home/wp_backup_dir
+
+[Wordpress site#3]
+ssh_server: example.com
+ssh_user: root
+ssh_key: /Users/home/key1.pem
+database: wordpress
+mysql_password: password
+wordpress_remote_folder: /var/www/wordpress
+backup_folder: /Users/home/wp_backup_dir
