@@ -7,5 +7,12 @@
         - name: /usr/bin/mysqladmin -u root password '{{ mysql_root_pass }}'
 
     mysql_server_delete_test_db:
-
+      mysql_database.absent:
+        - name: test
+        - host: localhost
+        - connection_host: localhost
+        - connection_port: 3306
+        - connection_user: root
+        - connection_pass: {{ mysql_root_pass }}
+        - connection_charset: utf8
 {% endif %}
