@@ -1,0 +1,9 @@
+php:
+  fpm:
+    fpm_socket: /tmp/php-fpm.socket
+    listen.owner: nobody
+    listen.group: nobody
+    listen.mode: 0666
+    user: nginx
+    group: nginx
+  cgi.fix_pathinfo: 0

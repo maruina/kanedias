@@ -1,0 +1,19 @@
+{% set php = salt['pillar.get']('php', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'pkgs':{
+                'fpm': 'php5-fpm'
+            },
+        'RedHat': {
+            'pkgs':{
+                'fpm': 'php-fpm'
+            },
+            'fpm': {
+                'conf': '/etc/php-fpm.conf',
+                'ini': '/etc/php.ini',
+                'www': '/etc/php-fpm.d/www.conf',
+                'service': 'php-fpm'
+            },
+        },
+    }, default='RedHat' )
+}, merge=True) %}
