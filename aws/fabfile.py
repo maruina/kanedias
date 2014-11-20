@@ -306,10 +306,10 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
     if not security_groups:
         print('You specified a security group that not exists, I will create it')
         # Create a new security group based on the tag
-        instance_security_group = ec2_conn.create_security_group(instance_tag.upper() + '_SG',
-                                                                 instance_tag.upper() + ' Security Group',
+        instance_security_group = ec2_conn.create_security_group(security_group.upper() + '_SG',
+                                                                 security_group.upper() + ' Security Group',
                                                                  vpc_id=subnet.vpc_id)
-        instance_security_group.add_tag('Name', instance_tag.upper() + ' Security Group')
+        instance_security_group.add_tag('Name', security_group.upper() + ' Security Group')
         instance_security_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1, cidr_ip=vpc.cidr_block)
         instance_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip='0.0.0.0/0')
         if 'WEB' in instance_tag.upper():
@@ -384,7 +384,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
         sys.exit(1)
     else:
         zone_changes = boto.route53.record.ResourceRecordSets(route53_conn, zone_id)
-        a_record = zone_changes.add_change(action='CREATE', name=internal_domain, type='A')
+        a_record = zone_changes.add_change(action='CREATE', name=instance_name, type='A')
         a_record.add_value(instance.private_ip_address)
         result = zone_changes.commit()
         result.update()
