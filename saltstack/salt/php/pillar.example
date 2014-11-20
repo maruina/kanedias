@@ -7,3 +7,4 @@ php:
     user: nginx
     group: nginx
   cgi.fix_pathinfo: 0
+  mysql

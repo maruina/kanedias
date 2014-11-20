@@ -1,6 +1,7 @@
 import os
 import sys
 import time
+import ConfigParser
 import boto.ec2
 import boto.vpc
 import boto.route53
@@ -533,5 +534,52 @@ def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_I
 
 
 @task
-def restore_wordpress():
-    pass
+def restore_wordpress(instance_id, section, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    """
+    Restore a backup done with wordpress_backup in ../backup/fabfile.py to the target instance
+    :param instance_id:
+    :param section: the [section] in config.ini
+    :param aws_id:
+    :param aws_key:
+    :param region:
+    :return:
+    """
+    config = ConfigParser.ConfigParser()
+
+    ini_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'backup'))
+    ini_file = ini_folder + '/config.ini'
+
+    if os.path.exists(ini_file):
+        config.read(ini_file)
+    else:
+        print(red('Error: config file not found!'))
+        sys.exit(1)
+
+    backup_folder = config.get(section, 'backup_folder')
+    domain_folder = os.path.join(backup_folder, section)
+
+    # Check if the instance exists
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    reservations = ec2_conn.get_all_instances(instance_ids=[instance_id])
+    if not reservations:
+        print(red('Error, instance {} does not exitst'.format(instance_id)))
+        sys.exit(1)
+    else:
+        instance = reservations[0].instances[0]
+
+    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
+
+    # Find the NAT parameters
+    nat_instance = find_subnet_nat_instance(subnet_id=instance.subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
+    if not nat_instance:
+        print(red('Error, NAT instance for instance {} not found'.format(instance.id)))
+        sys.exit(1)
+    else:
+        nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
+
+    with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
+                  user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
+        put(local_path=domain_folder + '/wp.db.gz', remote_path='/root/wp.db.gz', use_sudo=True)
+        put(local_path=domain_folder + '/wp.tar.gz', remote_path='/root/wp.tar.gz', use_sudo=True)

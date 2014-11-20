@@ -3,6 +3,7 @@
 
 include:
   - mysql.install
+  - mysql.service
 
 {% if salt['pillar.get']('mysql:server:install') %}
 mysql_server_change_root_password:
@@ -10,6 +11,7 @@ mysql_server_change_root_password:
     - name: /usr/bin/mysqladmin -u root password '{{ mysql_root_pass }}'
     - require:
       - sls: mysql.install
+      - sls: mysql.service
 
 mysql_server_delete_test_db:
   mysql_database.absent:
@@ -20,4 +22,7 @@ mysql_server_delete_test_db:
     - connection_user: root
     - connection_pass: {{ mysql_root_pass }}
     - connection_charset: utf8
+    - require:
+      - sls: mysql.install
+      - sls: mysql.service
 {% endif %}
