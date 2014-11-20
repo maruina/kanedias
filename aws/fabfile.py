@@ -315,6 +315,10 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
         if 'WEB' in instance_tag.upper():
             instance_security_group.authorize(ip_protocol='tcp', from_port=80, to_port=80, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=443, to_port=443, cidr_ip='0.0.0.0/0')
+        if 'MTA' in instance_tag.upper():
+            instance_security_group.authorize(ip_protocol='tpc', from_port=587, to_port=587, cidr_ip='0.0.0.0/0')
+            instance_security_group.authorize(ip_protocol='tcp', from_port=993, to_port=993, cidr_ip='0.0.0.0/0')
+            instance_security_group.authorize(ip_protocol='tcp', from_port=995, to_port=995, cidr_ip='0.0.0.0/0')
         print('Security group {} created'.format(instance_security_group.id))
     else:
         # Use the secuirty group
@@ -534,11 +538,55 @@ def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_I
 
 
 @task
-def restore_wordpress(instance_id, section, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def backup_salt_master(dest_dir=None or DEFAULT_FILE_DIR, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
+                       region=None or REGION):
+
+    # Check if the instance exists
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    reservations = ec2_conn.get_all_instances(filters={'name': 'saltmaster*'})
+    if not reservations:
+        print(red("Error, can't find any instance with name saltmaster"))
+        sys.exit(1)
+    else:
+        instance = reservations[0].instances[0]
+
+    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
+
+    backup_folder = dest_dir + instance.id + '_salt_backup'
+
+    if not os.path.exists(backup_folder):
+        os.mkdir(backup_folder)
+        print("Directory {} created".format(backup_folder))
+    else:
+        print("Warning: directory {} is not empty, I will save in it".format(backup_folder))
+
+    # Find the NAT parameters
+    nat_instance = find_subnet_nat_instance(subnet_id=instance.subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
+    if not nat_instance:
+        print(red('Error, NAT instance for instance {} not found'.format(instance.id)))
+        sys.exit(1)
+    else:
+        nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
+
+    with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
+                  user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
+        get(remote_path='/etc/salt', local_path=backup_folder)
+
+    print(green("Salt master backup complete!"))
+
+
+@task
+def restore_wordpress(instance_id, section, mysql_root_pass, mysql_db, www_user, aws_id=None or AWS_ID,
+                      aws_key=None or AWS_KEY, region=None or REGION):
     """
-    Restore a backup done with wordpress_backup in ../backup/fabfile.py to the target instance
+    Restorce a wordpress_backup() to the target instance
     :param instance_id:
-    :param section: the [section] in config.ini
+    :param section:
+    :param mysql_root_pass:
+    :param mysql_db:
+    :param www_user:
     :param aws_id:
     :param aws_key:
     :param region:
@@ -583,3 +631,15 @@ def restore_wordpress(instance_id, section, aws_id=None or AWS_ID, aws_key=None 
                   user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
         put(local_path=domain_folder + '/wp.db.gz', remote_path='/root/wp.db.gz', use_sudo=True)
         put(local_path=domain_folder + '/wp.tar.gz', remote_path='/root/wp.tar.gz', use_sudo=True)
+        with settings(warn_only=True):
+            sudo('mkdir /var/www')
+        sudo('mkdir /var/www/' + section)
+        sudo('tar xvfz /root/wp.tar.gz -C /var/www/' + section)
+        sudo('chown -R ' + www_user + ':' + www_user + '/var/www/' + section)
+        sudo('chmod -R 755' + www_user + ':' + www_user + '/var/www/' + section)
+        sudo('chmod -R 755' + www_user + ':' + www_user + '/var/www/' + section)
+        sudo('tar zxvf /root/wp.db.gz')
+        sudo('mysqldump -u root --password=' + mysql_root_pass + ' ' + mysql_db + ' < /root/wp.db')
+
+    print(green("Ok, wordpress restore complete!"))
+

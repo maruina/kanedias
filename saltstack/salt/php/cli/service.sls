@@ -10,3 +10,5 @@ php_cli_service:
     - reload: True
     - require:
       - sls: php.cli.install
+    - watch:
+      - pgk: {{ php.lookup.pkgs.cli }}
