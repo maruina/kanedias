@@ -1,0 +1,3 @@
+postfix:
+  ssl:
+    ca: star

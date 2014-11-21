@@ -74,7 +74,7 @@ AMI_LIST = {
 
 AMI_USER = {
     'CentOS': 'root',
-    'Debian': 'ec2-user',
+    'Debian': 'admin',
     'Ubuntu': 'ubuntu',
     'Amazon': 'ec2-user'
 }

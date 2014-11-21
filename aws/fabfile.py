@@ -302,6 +302,8 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
     subnet = vpc_conn.get_all_subnets(subnet_ids=[subnet_id])[0]
     vpc = vpc_conn.get_all_vpcs(vpc_ids=subnet.vpc_id)[0]
 
+    print("Ready to spin a new {} instance".format(op_system))
+
     security_groups = ec2_conn.get_all_security_groups(filters={'description': security_group.upper() + '*'})
     if not security_groups:
         print('You specified a security group that not exists, I will create it')
@@ -319,7 +321,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
             instance_security_group.authorize(ip_protocol='tpc', from_port=587, to_port=587, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=993, to_port=993, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=995, to_port=995, cidr_ip='0.0.0.0/0')
-        print('Security group {} created'.format(instance_security_group.id))
+        print('Security group {} [{}] created'.format(instance_security_group.id))
     else:
         # Use the secuirty group
         if len(security_groups) > 1:
@@ -391,6 +393,24 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
         while 'PENDING' in result.update():
             print("Propagating DNS record...")
             time.sleep(5)
+
+    instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
+    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+
+    # Find the NAT parameters
+    nat_instance = find_subnet_nat_instance(subnet_id=instance.subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
+    if not nat_instance:
+        print(red('Error, NAT instance for instance {} not found'.format(instance.id)))
+        sys.exit(1)
+    else:
+        nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
+
+    # Update hostname
+    if 'Debian' in op_system:
+        with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
+                      user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True, warn_only=True):
+            sudo('echo ' + instance_name + ' > /etc/hostname')
+            sudo('echo ' + instance.private_ip_address + ' ' + instance_name + ' >> /etc/hosts')
 
     print(green("Instance {} spinned!".format(instance.id)))
 
