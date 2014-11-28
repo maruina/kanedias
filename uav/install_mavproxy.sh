@@ -1,6 +1,6 @@
 #!/bin/sh
 
-install_folder=/home/vagrant
+install_folder=$HOME
 
 sudo apt-get update
 sudo apt-get -y upgrade
@@ -10,6 +10,11 @@ mkdir ${install_folder}/ardupilot
 git clone git://github.com/diydrones/ardupilot.git ${install_folder}/ardupilot
 chmod +x ${install_folder}/ardupilot/Tools/scripts/install-prereqs-ubuntu.sh
 ${install_folder}/ardupilot/Tools/scripts/install-prereqs-ubuntu.sh
+
+export PATH=$PATH:$HOME/ardupilot/Tools/autotest
+export PATH=$PATH:/usr/local/lib/python2.7/dist-packages/MavProxy
+export PATH=$PATH:/usr/local/lib/python2.7/dist-packages/pymavlink/examples
+export PATH=/usr/lib/ccache:$PATH
 
 echo 'export PATH=$PATH:$HOME/ardupilot/Tools/autotest' >> ~/.bashrc
 echo 'export PATH=$PATH:/usr/local/lib/python2.7/dist-packages/MavProxy' >> ~/.bashrc

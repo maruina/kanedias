@@ -1,0 +1,13 @@
+{% set asterisk = salt['pillar.get']('asterisk', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'asterisk'
+        },
+        'RedHat': {
+            'package': 'asterisk',
+            'user': 'asteriskpbx',
+            'group': 'asteriskpbx',
+            'conf_file': '/etc/my.cf'
+        },
+    }, default='RedHat' ),
+}, merge=True) %}

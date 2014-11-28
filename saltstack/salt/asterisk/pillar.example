@@ -1,0 +1,33 @@
+mysql:
+  server:
+    install: True
+    root_password: 'somepass'
+    user: mysql
+    # my.cnf sections changes
+    mysqld:
+      bind-address: 0.0.0.0
+
+  # Manage databases
+  database:
+    - foo
+    - bar
+
+  # Manage users
+  # you can get pillar for existent server using import_users.py script
+  user:
+    frank:
+      password: 'somepass'
+      host: localhost
+      databases:
+        - database: foo
+          grants: ['select', 'insert', 'update']
+        - database: bar
+          grants: ['all privileges']
+
+  # Override any names defined in map.jinja
+  lookup:
+    server: mysql-server
+    client: mysql-client
+    service: mysql-service
+    config: /etc/mysql/my.cnf
+    python: python-mysqldb
