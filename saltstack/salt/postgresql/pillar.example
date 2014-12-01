@@ -1,5 +1,32 @@
 postgresql:
   server:
     install: True
-    root_password: 'somepass'
     postgis: True
+
+  database:
+    db1:
+      owner: 'localUser'
+      user: 'localUser'
+      lc_ctype: 'C.UTF-8'
+      lc_collate: 'C.UTF-8'
+
+    db2:
+      owner: 'localUser'
+      user: 'remoteUser'
+      lc_ctype: 'C.UTF-8'
+      lc_collate: 'C.UTF-8'
+
+  # Manage roles
+  user:
+    localUser:
+      password: 'somepass'
+    remoteUser:
+      password: 'otherpass'
+
+  acl:
+    - ['local', 'db1', 'localUser']
+    - ['host', 'db2', 'remoteUser', '123.123.0.0/24']
+
+  extension:
+    - postgis: [ db1, db2]
+    - postgis_topology: [db1, db2]

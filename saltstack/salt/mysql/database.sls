@@ -12,4 +12,6 @@
     - connection_user: root
     - connection_pass: {{ mysql_root_pass }}
     - connection_charset: utf8
+    - require:
+      - service: {{ mysql.lookup.server_service }}
 {% endfor %}
