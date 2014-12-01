@@ -2,7 +2,7 @@
 {% set mysql_root_pass = salt['pillar.get']('mysql:server:root_password', 'mysqlroot') %}
 
 {% for database in salt['pillar.get']('mysql:database') %}
-{% set db_state_id = 'mysql_db_' ~ loop.index0 %}
+{% set db_state_id = 'mysql_db_' ~ database %}
 {{ db_state_id }}:
   mysql_database.present:
     - name: {{ database }}

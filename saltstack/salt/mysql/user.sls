@@ -2,7 +2,7 @@
 {% set mysql_root_pass = salt['pillar.get']('mysql:server:root_password', 'mysqlroot') %}
 
 {% for name, user in salt['pillar.get']('mysql:user', {}).items() %}
-{% set user_state_id = 'mysql_user_' ~ loop.index0 %}
+{% set user_state_id = 'mysql_user_' ~ name %}
 {{ user_state_id }}:
   mysql_user.present:
     - name: {{ name }}

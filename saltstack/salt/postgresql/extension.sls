@@ -8,6 +8,8 @@
   postgres_extension.present:
     - name: {{ extension }}
     - maintenance_db: {{ db }}
+    - require:
+      - service: {{ postgresql.lookup.server_service }}
 
     {% endfor %}
 {% endfor %}

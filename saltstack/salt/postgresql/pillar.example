@@ -6,13 +6,11 @@ postgresql:
   database:
     db1:
       owner: 'localUser'
-      user: 'localUser'
       lc_ctype: 'C.UTF-8'
       lc_collate: 'C.UTF-8'
 
     db2:
-      owner: 'localUser'
-      user: 'remoteUser'
+      owner: 'remoteUser'
       lc_ctype: 'C.UTF-8'
       lc_collate: 'C.UTF-8'
 
