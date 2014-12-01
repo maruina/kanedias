@@ -1,0 +1,5 @@
+postgresql:
+  server:
+    install: True
+    root_password: 'somepass'
+    postgis: True

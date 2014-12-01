@@ -1,0 +1,13 @@
+{% set postgresql = salt['pillar.get']('postgresql', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'todo'
+        },
+        'RedHat': {
+            'server': 'postgresql93-server',
+            'contrib': 'postgresql93-contrib',
+            'devel': 'postgresql93-devel',
+            'postgis': 'postgis2_93'
+        },
+    }, default='RedHat' )
+}, merge=True) %}
