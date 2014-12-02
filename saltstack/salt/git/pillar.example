@@ -1,5 +1,17 @@
 git:
   repository:
-    - name: foo
-    - key: id_private.dsa
-    - rev:
+    repository1:
+      rev: master
+      target: /path/to/clone
+      identity: key_name
+      force: True
+      force_checkout: True
+      user: www-data
+      group: www-data
+      dir_mode: 644
+    repositoryN:
+      rev: dev
+      target: /path/to/clone
+      identity: key_name
+      force: True
+      force_checkout: False
