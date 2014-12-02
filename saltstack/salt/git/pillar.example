@@ -1,0 +1,5 @@
+git:
+  repository:
+    - name: foo
+    - key: id_private.dsa
+    - rev:

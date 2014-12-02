@@ -1,0 +1,10 @@
+{% set miniconda = salt['pillar.get']('miniconda', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'profile_dir': '/etc/profile.d'
+        },
+        'RedHat': {
+            'profile_dir': '/etc/profile.d'
+        },
+    }, default='RedHat' )
+}, merge=True) %}
