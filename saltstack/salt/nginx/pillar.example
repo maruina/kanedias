@@ -1,7 +1,14 @@
 nginx:
   website:
-    name: archon_website
-    type: php
-    server_name: www.archondronistics.com
-    root_dir: /var/www/ad_wordpress
-    redirect: archondrones.com
+    - name: mywordpress
+    - type: php
+    - server_name: www.archondronistics.com
+    - root_dir: /var/www/ad_wordpress
+    - redirect: archondrones.com
+  website2:
+    - name: myflask
+    - type: python
+    - server_name:
+    - root_dir:
+    - static_dir:
+    - python_dir:
