@@ -1,0 +1,18 @@
+#################################################
+#                                               #
+# PLEASE BE AWARE OF THE FOLLOWING RULES:       #
+#                                               #
+# This file requires tabs between elements      #
+#                                               #
+# Directories require a trailing slash:         #
+#   right: /home/                               #
+#   wrong: /home                                #
+#                                               #
+#################################################
+rsnapshot:
+  backup_dir: /path/to/backup/dir/
+  interval:
+    hourly: 6
+    daily: 7
+    weekly: 4
+    monthly: 3
