@@ -1,0 +1,16 @@
+supervisor:
+  program:
+    myapp:
+      command: /path/to/uwsgi --ini /path/to/uwsgi.ini
+      directory: /path/to/app
+      autostart: True
+      autorestart: True
+      user: www-data
+      stopsignal: QUIT
+    mysecondapp:
+      command=/path/to/gunicorn --bind 127.0.0.1:5000 --workers=2 wsgi:app
+      directory: /path/to/app
+      autostart: True
+      autorestart: True
+      user: ubuntu
+      stopsignal=KILL

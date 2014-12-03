@@ -10,8 +10,6 @@ miniconda_install:
     - name: bash miniconda.sh -b -p {{ pillar['miniconda']['path'] }}
     - unless: test -f {{ pillar['miniconda']['path'] }}/bin/conda
 
-{% if salt['grains.get']('os_family') == 'RedHat' %}
-
 miniconda_path:
   file.managed:
     - name: {{ miniconda.lookup.profile_dir }}/miniconda.sh
@@ -20,5 +18,3 @@ miniconda_path:
     - group: root
     - mode: 644
     - template: jinja
-
-{% endif %}

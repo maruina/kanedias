@@ -1,0 +1,14 @@
+{% set supervisor = salt['pillar.get']('supervisor', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'supervisor',
+            'service': 'todo',
+            'conf_file': 'todo'
+        },
+        'RedHat': {
+            'package': 'supervisor',
+            'service': 'supervisord',
+            'conf_file': 'etc/supervisord.conf'
+        },
+    }, default='RedHat' )
+}, merge=True) %}

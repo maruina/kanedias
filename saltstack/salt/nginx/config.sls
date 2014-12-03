@@ -13,7 +13,7 @@ nginx_example_ssl_conf:
     {% endif %}
 {% endif %}
 
-{% for website, parameters in salt['pillar.get']('nginx:website') %}
+{% for website, parameters in salt['pillar.get']('nginx:website').iteritems() %}
   {% set nginx_conf_id = 'nginx_conf_' ~ website %}
 
 {{ nginx_conf_id }}:
