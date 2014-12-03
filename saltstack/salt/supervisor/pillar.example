@@ -13,4 +13,4 @@ supervisor:
       autostart: True
       autorestart: True
       user: ubuntu
-      stopsignal=KILL
+      stopsignal: KILL

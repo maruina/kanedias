@@ -9,4 +9,4 @@ supervisor_conf_file:
     - mode: 644
     - template: jinja
     - watch_in:
-      - service: {{ nginx.lookup.service }}
+      - service: {{ supervisor.lookup.service }}

@@ -1,2 +1,20 @@
 miniconda:
-  - path: /opt/miniconda
+  path: /opt/miniconda
+  virtualenv:
+    # Name of the virtual environment
+    myvirtualenv1:
+      # Directory to install the virtualenv. If you choose /env your final venv will be /env/myvirtualenv1
+      directory: /path/to/install/venv
+      # Python version number supported by anaconda
+      python: 2.7
+      requirements: /path/to/requirements.txt
+      anaconda_requirements: /path/to/anaconda_requirements.txt
+    myvirtualenv2:
+      directory: /path/to/install/venv
+      python: 2.7
+      # packages separated by a space
+      packages: uwsgi gunicorn ...
+    myvirtualenvN:
+      directory: /path/to/install/venvN
+      python: 3.4
+      requirements: /path/to/requirementsN.txt
