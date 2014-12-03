@@ -2,12 +2,15 @@ nginx:
   website:
     mywordpress:
       type: php
-      server_name: www.archondronistics.com
-      root_dir: /var/www/ad_wordpress
-      redirect: archondrones.com
+      server_name: www.mywordpress.com
+      root_dir: /var/www/mywordpress
+      # Optional redirect from an old website
+      redirect: www.olddomain.com
     myflask:
       type: python
-      server_name: www.archondronistics.com
-      python_dir: /var/www/archon_backend
+      server_name: www.myflaskapp.com
+      python_dir: /var/www/mypythonapp
+      # Python location for nginx. In this case will be www.myflaskapp.com/api
       python_location: /api
+      # If you don't have a static folder, use the python_dir and set the location to root
       static_dir: /var/www/archon_frontend
