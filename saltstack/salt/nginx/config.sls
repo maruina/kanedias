@@ -13,12 +13,12 @@ nginx_example_ssl_conf:
     {% endif %}
 {% endif %}
 
-{% for website, parameters in salt['pillar.get']('nginx:website').iteritems() %}
-  {% set nginx_conf_id = 'nginx_conf_' ~ website %}
+{% for name, parameters in salt['pillar.get']('nginx:website').iteritems() %}
+  {% set nginx_conf_id = 'nginx_conf_' ~ name %}
 
 {{ nginx_conf_id }}:
   file.managed:
-    - name: {{ nginx.lookup.vhost_enabled }}/{{ website }}.conf
+    - name: {{ nginx.lookup.vhost_enabled }}/{{ name }}.conf
     {% if parameters['type'] == 'php' %}
     - source: salt://nginx/files/php_host.conf
     {% elif parameters['type'] == 'python' %}

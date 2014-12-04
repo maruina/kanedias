@@ -14,3 +14,5 @@ nginx:
       python_location: /api
       # If you don't have a static folder, use the python_dir and set the location to /
       static_dir: /var/www/archon_frontend
+      # Optional redirect from an old website
+      redirect: www.olddomain.com

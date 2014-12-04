@@ -18,16 +18,10 @@
     {% endif %}
     {% if parameters['requirements'] %}
         {% set install_req = 'install_req_' ~ name %}
+
 {{ install_req }}:
   cmd.run:
     - name: {{ parameters['directory'] }}/{{ name }}/bin/pip install -r {{ parameters['requirements'] }}
-
-    {% endif %}
-    {% if parameters['packages'] %}
-        {% set install_packages = 'install_pkgs_' ~ name %}
-{{ install_packages }}:
-  cmd.run:
-    - name: {{ parameters['directory'] }}/{{ name }}/bin/pip install {{ parameters['packages'] }}
 
     {% endif %}
 {% endfor %}

@@ -6,5 +6,6 @@ php:
     listen.mode: 0666
     user: nginx
     group: nginx
-  cgi.fix_pathinfo: 0
+  ini:
+    cgi.fix_pathinfo: 0
   mysql

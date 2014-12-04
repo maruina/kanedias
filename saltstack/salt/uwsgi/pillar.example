@@ -1,0 +1,23 @@
+uwsgi:
+  # Install LTS version of uwsgi. True|False
+  install_lts: True
+  # Path to the virtual environment, not to the bin folder in venv. If none we will use the system pip
+  virtualenv: /path/to/venv
+  conf_dir: /path/to/uwsgi.ini
+  log_dir: /path/to/log/dir
+  uwsgi_conf:
+    chdir: /app/flythegap
+    module: flythegap.wsgi_production:application
+    master: True
+    pidfile: /tmp/uwsgi_flythegap_master.pid
+    socket: /tmp/uwsgi_flythegap.sock
+    processes: 5
+    harakiri: 20
+    max-requests: 2000
+    vacuum: True
+    virtualenv: /env
+    uid: www-data
+    gid: www-data
+    logto: /var/log/uwsgi/flythegap.log
+    buffer-size: 32768
+    die-on-term: True
