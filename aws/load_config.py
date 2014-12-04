@@ -79,7 +79,6 @@ AMI_USER = {
     'Amazon': 'ec2-user'
 }
 
-
 ENVIRONMENTS = {
     'dev': 'development',
     'tst': 'test',

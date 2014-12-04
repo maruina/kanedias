@@ -10,5 +10,5 @@ postgresql_server_service:
     - enable: True
     - reload: True
     - require:
-      - postgresql.install
+      - sls: postgresql.install
 {% endif %}

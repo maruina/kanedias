@@ -53,7 +53,7 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     av_zones = ec2_conn.get_all_zones()
 
-    #Check if a VPC with that CIDR already exists
+    # Check if a VPC with that CIDR already exists
     vpcs = test_vpc_cidr(cidr=cidr, vpc_conn=vpc_conn)
     if vpcs:
         print(red('You have a VPC withing the desired subnet already, aborting...'))
@@ -93,7 +93,7 @@ def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID,
         subnet_dict[key].add_tag('Name', key + '-' + item['Zone'].name)
 
     # Tag the Main Route Table
-    vpc_filter = {'vpcId': vpc.id}
+    vpc_filter = {'vpc-id': vpc.id}
     main_route_table = vpc_conn.get_all_route_tables(filters=vpc_filter)[0]
     main_route_table.add_tag('Name', 'Main Route Table')
 
@@ -181,7 +181,7 @@ def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None o
     # Check how many NAT instances already running
     nat_instances = ec2_conn.get_all_instances(filters={'tag:Name': 'nat*'})
     nat_instance_name = 'nat.' + str(len(nat_instances) + 1).zfill(3) + '.' + env_tag + '.' +\
-                        subnet.availability_zone + '.archondronistics.lan'
+                        subnet.availability_zone + DEFAULT_INTERNAL_DOMAIN
     nat_instance.add_tag('Name', nat_instance_name)
     # Check if the instance is ready
     print('Waiting for instance to start...')
@@ -250,7 +250,7 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
     # Check how many Saltmaster instances already running
     saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*'})
     if not saltmaster_reservations:
-        saltmaster_name = 'saltmaster.' + subnet.availability_zone + '.archondronistics.lan'
+        saltmaster_name = 'saltmaster.' + subnet.availability_zone + '.' + DEFAULT_INTERNAL_DOMAIN
 
         print('New Saltmaster instance name: {}'.format(saltmaster_name))
         print('New Saltmaster OS: {}'.format(op_system))
@@ -662,4 +662,3 @@ def restore_wordpress(instance_id, section, mysql_root_pass, mysql_db, www_user,
         sudo('mysqldump -u root --password=' + mysql_root_pass + ' ' + mysql_db + ' < /root/wp.db')
 
     print(green("Ok, wordpress restore complete!"))
-

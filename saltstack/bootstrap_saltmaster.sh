@@ -21,6 +21,4 @@ if [[ ${salt_call} ]]; then
     echo 'Salt Master already installed'
     wget -O ${root_dir}/install_salt.sh https://bootstrap.saltstack.com
     sh ${root_dir}/install_salt.sh -M -N
-else
-
 fi
