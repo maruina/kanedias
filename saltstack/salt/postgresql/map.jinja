@@ -8,8 +8,10 @@
             'server_service': 'postgresql-9.3',
             'contrib': 'postgresql93-contrib',
             'devel': 'postgresql93-devel',
+            'python': 'python-devel',
             'postgis': 'postgis2_93',
-            'conf_dir': '/var/lib/pgsql/9.3/data'
+            'conf_dir': '/var/lib/pgsql/9.3/data',
+            'profile_dir': '/etc/profile.d'
         },
     }, default='RedHat' )
 }, merge=True) %}

@@ -20,10 +20,19 @@ postgresql_server_install:
       - {{ postgresql.lookup.server }}
       - {{ postgresql.lookup.contrib }}
       - {{ postgresql.lookup.devel }}
+      - {{ postgresql.lookup.python }}
 
         {% endif %}
     {% endif %}
 {% endif %}
+
+postgresql_path:
+  file.managed:
+    - name: {{ postgresql.lookup.profile_dir }}/postgresql.sh
+    - source: salt://postgresql/files/postgresql.sh
+    - user: root
+    - group: root
+    - mode: 644
 
 {% if salt['pillar.get']('postgresql:server:postgis') %}
     {% if salt['grains.get']('os_family') == 'RedHat' %}
