@@ -272,14 +272,14 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
 
     conn_key = os.path.join(DEFAULT_SSH_DIR, saltmaster_instance.key_name+'.pem')
     salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
-    bootstrap_script = salt_script_folder + '/bootstrap_saltmaster.sh'
+    bootstrap_script = os.path.join(salt_script_folder, '/bootstrap_salt.sh')
     username = AMI_USER[op_system]
 
     with settings(gateway='ec2-user@'+nat_instance.ip_address, host_string=username+'@'+saltmaster_instance.private_ip_address, user=username,
                   key_filename=conn_key, forward_agent=True):
         # run('uname -a')
         put(bootstrap_script, mode=0700)
-        run('./bootstrap_saltmaster.sh')
+        run('./bootstrap_salt.sh master')
         run('service iptables stop')
 
 
@@ -472,13 +472,14 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
             print('Installing salt')
 
             salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
-            bootstrap_script = salt_script_folder + '/bootstrap_saltminion.sh'
+            bootstrap_script = os.path.join(salt_script_folder, 'bootstrap_salt.sh')
 
             # Generate a Salt Master accepted key and download it if you don't have it
             if os.path.isfile(DEFAULT_FILE_DIR + instance_name + '.pub') and \
                     os.path.isfile(DEFAULT_FILE_DIR + instance_name + '.pem'):
                 print('Key already generated')
             else:
+                # FIXME: handle systems with sudo access
                 with settings(gateway=nat_instance.ip_address, host_string=saltmaster_ssh_user + '@' +
                         saltmaster_private_ip, user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
                     sudo('salt-key --gen-keys=' + instance_name)
@@ -493,10 +494,11 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
             time.sleep(5)
 
             # Connect to the instance, bootstrap salt and install the keys
+            # FIXME: handle systems with sudo access
             with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' +
                     instance.private_ip_address, user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
                 put(local_path=bootstrap_script, remote_path='/root/', mode=0700, use_sudo=True)
-                sudo('/root/bootstrap_saltminion.sh')
+                sudo('/root/bootstrap_salt.sh minion')
                 sudo('service salt-minion stop')
                 sudo('mv /etc/salt/pki/minion/minion.pem /etc/salt/pki/minion/minion.pem.bkp')
                 sudo('mv /etc/salt/pki/minion/minion.pub /etc/salt/pki/minion/minion.pub.bkp')
@@ -648,6 +650,7 @@ def restore_wordpress(instance_id, section, mysql_root_pass, mysql_db, www_user,
     else:
         nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
 
+    # FIXME: handle systems with sudo access
     with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
                   user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
         put(local_path=domain_folder + '/wp.db.gz', remote_path='/root/wp.db.gz', use_sudo=True)
