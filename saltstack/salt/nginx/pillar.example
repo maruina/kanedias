@@ -1,4 +1,6 @@
 nginx:
+  server:
+    example_files: False
   website:
     mywordpress:
       type: php

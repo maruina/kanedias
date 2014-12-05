@@ -22,7 +22,7 @@ nginx_example_ssl_conf:
     {% if parameters['type'] == 'php' %}
     - source: salt://nginx/files/php_host.conf
     {% elif parameters['type'] == 'python' %}
-    - source: salt://nginx/files/php_host.conf
+    - source: salt://nginx/files/python_host.conf
     {% endif %}
     - user: root
     - group: root
@@ -30,5 +30,7 @@ nginx_example_ssl_conf:
     - template: jinja
     - watch_in:
       - service: {{ nginx.lookup.service }}
+    - context:
+        parameters: {{ parameters }}
 
 {% endfor %}
