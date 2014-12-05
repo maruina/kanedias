@@ -12,7 +12,7 @@ postgresql_centos_repo:
 postgresql_server_init:
   cmd.run:
     - name: service postgresql-9.3 initdb
-    - unless: test -f {{ postgres.conf_dir }}/postgresql.conf
+    - unless: test -f {{ postgresql.lookup.conf_dir }}/postgresql.conf
 
 postgresql_server_install:
   pkg.installed:
