@@ -7,7 +7,7 @@
 postgresql_centos_repo:
   cmd.run:
     - name: rpm -ivh http://yum.postgresql.org/9.3/redhat/rhel-6-{{ salt['grains.get']('osarch') }}/pgdg-centos93-9.3-1.noarch.rpm
-    - unlesse: ls /etc/yum.repos.d/ | grep pg
+    - unless: ls /etc/yum.repos.d/ | grep pg
 
 postgresql_server_init:
   cmd.run:
