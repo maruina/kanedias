@@ -8,5 +8,5 @@ default_os = CentOS or Debian or Ubuntu. Look for the OS string in AMI_LIST dict
 default_ssh_dir = /xxx/yyy/zzz/ is the directory where you have your aws ssh pem files
 default_file_dir = /xxx/yyy/zzz/ is the directory where you have the files you want to upload and the download directory
 # The name of the domain.
-# This should be a fully-specified domain, and should end with a final period as the last label indication.
+# This should be a fully-specified domain.
 default_internal_domain = example.lan

@@ -29,7 +29,7 @@ def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None 
     print('You have {} VPC in region {} [{}]'.format(len(vpcs), AWS_REGIONS[region], region))
     for vpc in vpcs:
         print(green('VPC: {} - CIDR: {}'.format(vpc.id, vpc.cidr_block)))
-        subnet_filter = {'vpcId': vpc.id}
+        subnet_filter = {'vpc-id': vpc.id}
         subnets = [x for x in vpc_conn.get_all_subnets(filters=subnet_filter) if 'Name' in x.tags]
         if subnets:
             for subnet in subnets:
@@ -181,7 +181,7 @@ def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None o
     # Check how many NAT instances already running
     nat_instances = ec2_conn.get_all_instances(filters={'tag:Name': 'nat*'})
     nat_instance_name = 'nat.' + str(len(nat_instances) + 1).zfill(3) + '.' + env_tag + '.' +\
-                        subnet.availability_zone + DEFAULT_INTERNAL_DOMAIN
+                        subnet.availability_zone + '.' + DEFAULT_INTERNAL_DOMAIN
     nat_instance.add_tag('Name', nat_instance_name)
     # Check if the instance is ready
     print('Waiting for instance to start...')
@@ -217,7 +217,7 @@ def spin_nat(subnet_id, key_name, env_tag, aws_id=None or AWS_ID, aws_key=None o
 def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                     region=None or REGION):
     """
-    Spin a salmaster instance in the target subnet
+    Spin a saltmaster instance in the target subnet
     :param subnet_id: Target subnet
     :param key_user: A string to identify the PEM key you want to use
     :param op_system: The OS you want to install Saltmaster
@@ -248,7 +248,7 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
         print('Saltmaster Security Group already exists: {}'.format(saltmaster_security_group.id))
 
     # Check how many Saltmaster instances already running
-    saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*'})
+    saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*', 'instance-state-name': 'running'})
     if not saltmaster_reservations:
         saltmaster_name = 'saltmaster.' + subnet.availability_zone + '.' + DEFAULT_INTERNAL_DOMAIN
 
@@ -270,12 +270,13 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
     nat_instance = find_subnet_nat_instance(subnet_id=subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
     print('Public IP to connect to: {}'.format(nat_instance.ip_address))
 
-    conn_key = DEFAULT_SSH_DIR + saltmaster_instance.key_name + '.pem'
+    conn_key = os.path.join(DEFAULT_SSH_DIR, saltmaster_instance.key_name+'.pem')
     salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
     bootstrap_script = salt_script_folder + '/bootstrap_saltmaster.sh'
+    username = AMI_USER[op_system]
 
-    with settings(gateway=nat_instance.ip_address, host_string='root@'+saltmaster_instance.private_ip_address, user=AMI_USER[op_system],
-                  key_filename=conn_key, forward_agent=True), cd('/root'):
+    with settings(gateway='ec2-user@'+nat_instance.ip_address, host_string=username+'@'+saltmaster_instance.private_ip_address, user=username,
+                  key_filename=conn_key, forward_agent=True):
         # run('uname -a')
         put(bootstrap_script, mode=0700)
         run('./bootstrap_saltmaster.sh')
@@ -601,7 +602,7 @@ def backup_salt_master(dest_dir=None or DEFAULT_FILE_DIR, aws_id=None or AWS_ID,
 def restore_wordpress(instance_id, section, mysql_root_pass, mysql_db, www_user, aws_id=None or AWS_ID,
                       aws_key=None or AWS_KEY, region=None or REGION):
     """
-    Restorce a wordpress_backup() to the target instance
+    Restore a wordpress_backup() to the target instance
     :param instance_id:
     :param section:
     :param mysql_root_pass:
