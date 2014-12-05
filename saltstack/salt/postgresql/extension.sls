@@ -1,15 +1,19 @@
 {% from 'postgresql/map.jinja' import postgresql with context %}
 
-{% for extension, dbs in salt['pillar.get']('postgresql:extension').iteritems() %}
-    {% for db in dbs %}
-    {% set extension_state_id = 'extension_' ~ extension ~ '_' ~ db %}
+{% for db in salt['pillar.get']('postgresql:server:postgis_db') %}
 
-{{ extension_state_id }}:
+install_postgis_{{ db }}:
   postgres_extension.present:
-    - name: {{ extension }}
+    - name: postgis
     - maintenance_db: {{ db }}
     - require:
       - service: {{ postgresql.lookup.server_service }}
 
-    {% endfor %}
+install_postgis_topology_{{ db }}:
+  postgres_extension.present:
+    - name: postgis_topology
+    - maintenance_db: {{ db }}
+    - require:
+      - service: {{ postgresql.lookup.server_service }}
+
 {% endfor %}
