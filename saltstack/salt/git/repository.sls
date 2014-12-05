@@ -16,7 +16,7 @@ include:
     - replace: False
 
 {{ git_state_id }}:
-  git.latest:k
+  git.latest:
     - name: {{ name }}
     - rev: {{ parameters['rev'] }}
     - target: {{ parameters['target'] }}
