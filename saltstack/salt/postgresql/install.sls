@@ -4,6 +4,16 @@
     {% if salt['grains.get']('os_family') == 'RedHat' %}
         {% if salt['grains.get']('os') == 'CentOS' %}
 
+postgresql_centos_repo:
+  cmd.run:
+    - name: rpm -ivh http://yum.postgresql.org/9.3/redhat/rhel-6-{{ salt['grains.get']('osarch') }}/pgdg-centos93-9.3-1.noarch.rpm
+    - unlesse: ls /etc/yum.repos.d/ | grep pg
+
+postgresql_server_init:
+  cmd.run:
+    - name: service postgresql-9.3 initdb
+    - unless: test -f {{ postgres.conf_dir }}/postgresql.conf
+
 postgresql_server_install:
   pkg.installed:
     - pkgs:
@@ -18,13 +28,6 @@ postgresql_server_install:
 {% if salt['pillar.get']('postgresql:server:postgis') %}
     {% if salt['grains.get']('os_family') == 'RedHat' %}
         {% if salt['grains.get']('os') == 'CentOS' %}
-
-postgis_centos_repo:
-  pkgrepo.managed:
-    - name: postgis
-    - humanname: postgis.repo
-    - baseurl: http://yum.postgresql.org/9.3/redhat/rhel-6-{{ salt['grains.get']('osarch', '') }}/pgdg-centos93-9.3-1.noarch.rpm
-    - gpgcheck: 0
 
 postgis_install:
   pkg.installed:

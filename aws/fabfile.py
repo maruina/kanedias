@@ -274,8 +274,8 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
     salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
     bootstrap_script = salt_script_folder + '/bootstrap_saltmaster.sh'
 
-    with settings(gateway=nat_instance.ip_address, host_string='root@'+saltmaster_instance.private_ip_address, user=AMI_USER[op_system],
-                  key_filename=conn_key, forward_agent=True), cd('/root'):
+    with settings(gateway=nat_instance.ip_address, host_string='root@'+saltmaster_instance.private_ip_address,
+                  user=AMI_USER[op_system], key_filename=conn_key, forward_agent=True), cd('/root'):
         # run('uname -a')
         put(bootstrap_script, mode=0700)
         run('./bootstrap_saltmaster.sh')
