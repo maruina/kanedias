@@ -16,10 +16,10 @@ include:
     - replace: False
 
 {{ git_state_id }}:
-  git.latest:
+  git.latest:k
     - name: {{ name }}
     - rev: {{ parameters['rev'] }}
-    - target:
+    - target: {{ parameters['target'] }}
     - identity: /etc/git_keys/{{ parameters['identity'] }}
     - force: {{ parameters['force'] }}
     - force_checkout: {{ parameters['force_checkout'] }}
