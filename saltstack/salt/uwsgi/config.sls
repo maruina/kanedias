@@ -1,6 +1,6 @@
 uwsgi_config:
   file.managed:
-    - name: {{ salt['pillar.get']('uwsgi:config_dir') }}
+    - name: {{ salt['pillar.get']('uwsgi:conf_file') }}
     - source: salt://uwsgi/files/uwsgi.ini
     - makedirs: True
     - user: root
