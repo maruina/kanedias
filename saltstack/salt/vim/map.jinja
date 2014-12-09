@@ -1,10 +1,10 @@
-{% set postfix = salt['pillar.get']('postfix', {
+{% set vim = salt['pillar.get']('vim', {
     'lookup': salt['grains.filter_by']({
         'Debian': {
-            'package': 'postfix'
+            'package': 'vim'
         },
         'RedHat': {
-            'package': 'postfix'
+            'package': 'vim'
         },
     }, default='RedHat' )
 }, merge=True) %}

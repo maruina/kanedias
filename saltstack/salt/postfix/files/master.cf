@@ -1,0 +1,4 @@
+# Hostname and domain name
+myhostname={{ salt['grains.get']('id') }}
+mydomain={{ salt['pillar.get']('postfix:mydomain') }}
+myorigin=$mydomain

@@ -18,3 +18,7 @@ miniconda_path:
     - group: root
     - mode: 644
     - template: jinja
+
+miniconda_reload_profile:
+  cmd.run:
+    - name: source /etc/profile

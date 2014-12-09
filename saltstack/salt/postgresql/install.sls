@@ -34,6 +34,10 @@ postgresql_path:
     - group: root
     - mode: 644
 
+postgresql_reload_profile:
+  cmd.run:
+    - name: source /etc/profile
+
 {% if salt['pillar.get']('postgresql:server:postgis') %}
     {% if salt['grains.get']('os_family') == 'RedHat' %}
         {% if salt['grains.get']('os') == 'CentOS' %}
