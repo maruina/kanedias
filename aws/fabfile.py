@@ -289,14 +289,14 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
                   aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Spin a generic instance
-    :param instance_tag:
-    :param env_tag:
-    :param subnet_id:
-    :param key_name:
-    :param aws_id:
-    :param aws_key:
-    :param region:
-    :return:
+    :param instance_tag: the instance typy. For example: app, web, nat, db, etc.
+    :param env_tag: the instance environment. For example: prd, tst, dev
+    :param subnet_id: the subnet where you want to create the instance
+    :param key_name: the name of the ssh key you want to use
+    :param aws_id: Amazon Access Key ID
+    :param aws_key: Amazon Secret Access Key
+    :param region: Target region for the VPC
+    :return: True if the instance is spinned correctly
     """
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
@@ -347,6 +347,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
         instance_key = keys[0]
         print('Key {} selected'.format(instance_key.name))
 
+    # FIXME: count only running instance, change the filter
     # How many instance of this type already running?
     instances = ec2_conn.get_all_instances(filters={'tag:Name': instance_tag + '*'})
     # Instance name: web.prd.001.eu-west-1a.example.com
@@ -376,7 +377,6 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
             instance.update()
             print(green("Instance {} [{}] accessible at {}".format(instance_name, instance.id,
                                                                    instance.ip_address)))
-
     # Add the DNS entry
     route53_conn = boto.route53.connect_to_region(region_name=region, aws_access_key_id=aws_id,
                                                   aws_secret_access_key=aws_key)
@@ -391,9 +391,6 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
         a_record.add_value(instance.private_ip_address)
         result = zone_changes.commit()
         result.update()
-        while 'PENDING' in result.update():
-            print("Propagating DNS record...")
-            time.sleep(5)
 
     instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
     instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
@@ -412,9 +409,16 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
                       user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True, warn_only=True):
             sudo('echo ' + instance_name + ' > /etc/hostname')
             sudo('echo ' + instance.private_ip_address + ' ' + instance_name + ' >> /etc/hosts')
+    if 'CentOS' in op_system:
+        with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
+                      user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True, warn_only=True):
+            sudo('hostname ' + instance_name)
+            sudo("sed -i 's/HOSTNAME=localhost.localdomain/HOSTNAME=" + instance_name + "/g' /etc/sysconfig/network")
+            sudo('echo ' + instance.private_ip_address + ' ' + instance_name + ' >> /etc/hosts')
+
 
     print(green("Instance {} spinned!".format(instance.id)))
-
+    return True
 
 @task
 def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
