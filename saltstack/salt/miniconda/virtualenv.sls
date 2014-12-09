@@ -1,5 +1,10 @@
 {% from 'miniconda/map.jinja' import miniconda with context %}
 
+venv_build_packages:
+  pkg.installed:
+    - pkgs:
+      - {{ miniconda.lookup.gcc }}
+
 {% for name, parameters in salt['pillar.get']('miniconda:virtualenv').iteritems() %}
     {% set venv_id = 'venv_' ~ name %}
 
@@ -13,7 +18,8 @@
 
 {{ install_areq }}:
   cmd.run:
-    - name: {{ pillar['miniconda']['path'] }}/bin/conda install -n {{ name }} --file {{ parameters['anaconda_requirements'] }}
+    - name: {{ pillar['miniconda']['path'] }}/bin/conda install -n {{ name }} --yes --file
+        {{ parameters['anaconda_requirements'] }}
 
     {% endif %}
     {% if 'requirements' in parameters %}

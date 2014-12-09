@@ -416,7 +416,6 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
             sudo("sed -i 's/HOSTNAME=localhost.localdomain/HOSTNAME=" + instance_name + "/g' /etc/sysconfig/network")
             sudo('echo ' + instance.private_ip_address + ' ' + instance_name + ' >> /etc/hosts')
 
-
     print(green("Instance {} spinned!".format(instance.id)))
     return True
 
@@ -541,7 +540,7 @@ def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_I
     else:
         instance = reservations[0].instances[0]
 
-    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    instance_ssh_key = os.path.join(DEFAULT_SSH_DIR, instance.key_name + '.pem')
     instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
 
     # Find the NAT parameters
@@ -554,6 +553,7 @@ def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_I
 
     with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
                   user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
+        # TODO: change this with rsync
         salt_files_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
         sudo("rm -rf /srv/salt")
         sudo("rm -rf /srv/pillar")
@@ -670,3 +670,8 @@ def restore_wordpress(instance_id, section, mysql_root_pass, mysql_db, www_user,
         sudo('mysqldump -u root --password=' + mysql_root_pass + ' ' + mysql_db + ' < /root/wp.db')
 
     print(green("Ok, wordpress restore complete!"))
+
+
+@task
+def print_instances_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    pass
