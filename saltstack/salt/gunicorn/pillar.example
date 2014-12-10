@@ -1,0 +1,4 @@
+gunicorn:
+  virtualenv: /path/to/venv
+  socket: unix:/tmp/gunicorn.sock
+  workers: 3

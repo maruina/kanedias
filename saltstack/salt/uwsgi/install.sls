@@ -1,8 +1,10 @@
 {% if salt['pillar.get']('uwsgi:install_lts') %}
 
+### https://groups.google.com/a/continuum.io/forum/#!msg/anaconda/JVxrCz9TZlI/s3rwBxzXIQ0J
+
 uwsgi_install_lts:
   cmd.run:
-    {% if salt['pillar.get']('uwsgi:virtualenv') %}
+    {% if salt['pillar.get']('uwsgi:uwsgi_conf:virtualenv') %}
     - name: {{ salt['pillar.get']('uwsgi:uwsgi_conf:virtualenv') }}/bin/pip install http://projects.unbit.it/downloads/uwsgi-lts.tar.gz
     {% else %}
     - name: pip install http://projects.unbit.it/downloads/uwsgi-lts.tar.gz

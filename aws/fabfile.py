@@ -419,6 +419,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
     print(green("Instance {} spinned!".format(instance.id)))
     return True
 
+
 @task
 def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
@@ -429,6 +430,7 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
     :param region:
     :return:
     """
+    # https://github.com/fabric/fabric/issues/1070
     # Check if the instance exists
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
@@ -554,6 +556,7 @@ def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_I
     with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
                   user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
         # TODO: change this with rsync
+        # https://www.digitalocean.com/community/tutorials/how-to-use-rsync-to-sync-local-and-remote-directories-on-a-vps
         salt_files_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
         sudo("rm -rf /srv/salt")
         sudo("rm -rf /srv/pillar")

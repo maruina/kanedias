@@ -9,6 +9,7 @@ include:
 mysql_server_change_root_password:
   cmd.run:
     - name: /usr/bin/mysqladmin -u root password '{{ mysql_root_pass }}'
+    - unless: /usr/bin/mysqladmin -u root --password={{ mysql_root_pass }} version
     - require:
       - sls: mysql.install
       - sls: mysql.service

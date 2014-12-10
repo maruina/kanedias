@@ -10,5 +10,3 @@ php_gd_service:
     - reload: True
     - require:
       - sls: php.gd.install
-    - watch:
-      - pgk: {{ php.lookup.pkgs.gd }}

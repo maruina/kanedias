@@ -1,8 +1,6 @@
 uwsgi:
   # Install LTS version of uwsgi. True|False
   install_lts: True
-  # Path to the virtual environment, not to the bin folder in venv. If none we will use the system pip
-  virtualenv: /path/to/venv
   conf_file: /path/to/uwsgi.ini
   log_dir: /path/to/log/dir
   uwsgi_conf:

@@ -17,7 +17,7 @@ venv_build_packages:
         {% set install_areq = 'install_areq_' ~ name %}
 
 {{ install_areq }}:
-  cmd.run:
+  cmd.wait:
     - name: {{ pillar['miniconda']['path'] }}/bin/conda install -n {{ name }} --yes --file
         {{ parameters['anaconda_requirements'] }}
 
@@ -26,8 +26,10 @@ venv_build_packages:
         {% set install_req = 'install_req_' ~ name %}
 
 {{ install_req }}:
-  cmd.run:
+  cmd.wait:
     - name: {{ pillar['miniconda']['path'] }}/envs/{{ name }}/bin/pip install -r {{ parameters['requirements'] }}
+    - env:
+        - PATH: '$PATH'
 
     {% endif %}
 {% endfor %}
