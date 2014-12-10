@@ -1,4 +1,12 @@
 gunicorn:
   virtualenv: /path/to/venv
-  socket: unix:/tmp/gunicorn.sock
-  workers: 3
+  conf_file: /path/to/file.py
+  log_dir: /path/to/log/dir
+  app: wsgi:app
+  bind: unix:/tmp/gunicorn.sock
+  workers: Auto
+  worker_class: gevent
+  user: nginx
+  group: nginx
+  accesslog: access.log
+  errorlog: error.log
