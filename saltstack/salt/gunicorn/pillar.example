@@ -1,9 +1,12 @@
 gunicorn:
+  miniconda:
+    virtualenv_name: name
   virtualenv: /path/to/venv
   conf_file: /path/to/file.py
   log_dir: /path/to/log/dir
-  app: wsgi:app
+  chdir: /path/to/project
   bind: unix:/tmp/gunicorn.sock
+  # If Auto
   workers: Auto
   worker_class: gevent
   user: nginx

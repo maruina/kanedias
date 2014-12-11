@@ -17,7 +17,7 @@ venv_build_packages:
         {% set install_areq = 'install_areq_' ~ name %}
 
 {{ install_areq }}:
-  cmd.wait:
+  cmd.run:
     - name: {{ pillar['miniconda']['path'] }}/bin/conda install -n {{ name }} --yes --file
         {{ parameters['anaconda_requirements'] }}
 
@@ -26,10 +26,14 @@ venv_build_packages:
         {% set install_req = 'install_req_' ~ name %}
 
 {{ install_req }}:
-  cmd.wait:
+  cmd.run:
     - name: {{ pillar['miniconda']['path'] }}/envs/{{ name }}/bin/pip install -r {{ parameters['requirements'] }}
     - env:
-        - PATH: '$PATH'
+        - PATH: $PATH:/usr/pgsql-9.3/bin:/usr/bin
 
     {% endif %}
 {% endfor %}
+
+print_path:
+  cmd.run:
+    - name: echo $PATH

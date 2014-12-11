@@ -8,9 +8,6 @@ supervisor:
       user: www-data
       stopsignal: QUIT
     mysecondapp:
-      command=/path/to/gunicorn --config /path/to/gunicorn.py
+      command: /path/to/gunicorn --config /path/to/gunicorn.py wsgi:app
       directory: /path/to/app
-      autostart: True
-      autorestart: True
-      user: ubuntu
-      stopsignal: KILL
+      autorestart: true

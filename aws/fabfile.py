@@ -10,6 +10,7 @@ from socket import gethostbyname
 from fabric.colors import red, green
 from fabric.api import run, sudo, cd, put, get, task
 from fabric.context_managers import settings
+from fabric.contrib.project import rsync_project
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR,\
     DEFAULT_FILE_DIR, DEFAULT_INTERNAL_DOMAIN
 from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, find_subnet_nat_instance, get_zone_id,\
@@ -560,8 +561,10 @@ def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_I
         salt_files_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
         sudo("rm -rf /srv/salt")
         sudo("rm -rf /srv/pillar")
-        put(local_path=salt_files_folder + '/salt', remote_path=dest_dir, use_sudo=True)
-        put(local_path=salt_files_folder + '/pillar', remote_path=dest_dir, use_sudo=True)
+        # rsync_project(remote_dir=dest_dir, local_dir=os.path.join(salt_files_folder, 'salt'))
+        # rsync_project(remote_dir=dest_dir, local_dir=os.path.join(salt_files_folder, 'pillar'))
+        put(local_path=os.path.join(salt_files_folder, 'salt'), remote_path=dest_dir, use_sudo=True)
+        put(local_path=os.path.join(salt_files_folder, 'pillar'), remote_path=dest_dir, use_sudo=True)
         sudo("salt '*' saltutil.refresh_pillar")
 
     print(green("Salt files updated"))
