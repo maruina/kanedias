@@ -33,7 +33,3 @@ venv_build_packages:
 
     {% endif %}
 {% endfor %}
-
-print_path:
-  cmd.run:
-    - name: echo $PATH
