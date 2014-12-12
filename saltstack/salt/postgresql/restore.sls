@@ -16,6 +16,7 @@
 {{ restore_db }}:
   cmd.wait:
     - name: psql {{ db }} < {{ parameters['file'] }}
+    - user: {{ parameters['owner'] }}
     - watch:
       - file: {{ restore_file }}
 

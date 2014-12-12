@@ -30,4 +30,5 @@ postgresql:
   restore:
     db_to_restore1:
       backup_name: backup.sql
+      owner: localUser
       file: /path/to/backup
