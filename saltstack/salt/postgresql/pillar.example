@@ -26,3 +26,8 @@ postgresql:
   acl:
     - ['local', 'db1', 'localUser']
     - ['host', 'db2', 'remoteUser', '123.123.0.0/24']
+
+  restore:
+    db_to_restore1:
+      backup_name: backup.sql
+      file: /path/to/backup

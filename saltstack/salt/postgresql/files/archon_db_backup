@@ -1,0 +1,528 @@
+--
+-- PostgreSQL database dump
+--
+
+SET statement_timeout = 0;
+SET lock_timeout = 0;
+SET client_encoding = 'UTF8';
+SET standard_conforming_strings = on;
+SET check_function_bodies = false;
+SET client_min_messages = warning;
+
+--
+-- Name: topology; Type: SCHEMA; Schema: -; Owner: ruio
+--
+
+CREATE SCHEMA topology;
+
+
+ALTER SCHEMA topology OWNER TO ruio;
+
+--
+-- Name: plpgsql; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS plpgsql WITH SCHEMA pg_catalog;
+
+
+--
+-- Name: EXTENSION plpgsql; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION plpgsql IS 'PL/pgSQL procedural language';
+
+
+--
+-- Name: postgis; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS postgis WITH SCHEMA public;
+
+
+--
+-- Name: EXTENSION postgis; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION postgis IS 'PostGIS geometry, geography, and raster spatial types and functions';
+
+
+--
+-- Name: postgis_topology; Type: EXTENSION; Schema: -; Owner: 
+--
+
+CREATE EXTENSION IF NOT EXISTS postgis_topology WITH SCHEMA topology;
+
+
+--
+-- Name: EXTENSION postgis_topology; Type: COMMENT; Schema: -; Owner: 
+--
+
+COMMENT ON EXTENSION postgis_topology IS 'PostGIS topology spatial types and functions';
+
+
+SET search_path = public, pg_catalog;
+
+SET default_tablespace = '';
+
+SET default_with_oids = false;
+
+--
+-- Name: alembic_version; Type: TABLE; Schema: public; Owner: ruio; Tablespace: 
+--
+
+CREATE TABLE alembic_version (
+    version_num character varying(32) NOT NULL
+);
+
+
+ALTER TABLE public.alembic_version OWNER TO ruio;
+
+--
+-- Name: maps2d; Type: TABLE; Schema: public; Owner: ruio; Tablespace: 
+--
+
+CREATE TABLE maps2d (
+    id integer NOT NULL,
+    name character varying(64),
+    center geometry(Point),
+    bounds geometry(LineString),
+    zoom integer,
+    forbidden_areas geometry(MultiPolygon),
+    interesting_areas geometry(MultiPolygon)
+);
+
+
+ALTER TABLE public.maps2d OWNER TO ruio;
+
+--
+-- Name: maps2d_id_seq; Type: SEQUENCE; Schema: public; Owner: ruio
+--
+
+CREATE SEQUENCE maps2d_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.maps2d_id_seq OWNER TO ruio;
+
+--
+-- Name: maps2d_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ruio
+--
+
+ALTER SEQUENCE maps2d_id_seq OWNED BY maps2d.id;
+
+
+--
+-- Name: maps3d; Type: TABLE; Schema: public; Owner: ruio; Tablespace: 
+--
+
+CREATE TABLE maps3d (
+    id integer NOT NULL,
+    name character varying(64)
+);
+
+
+ALTER TABLE public.maps3d OWNER TO ruio;
+
+--
+-- Name: maps3d_id_seq; Type: SEQUENCE; Schema: public; Owner: ruio
+--
+
+CREATE SEQUENCE maps3d_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.maps3d_id_seq OWNER TO ruio;
+
+--
+-- Name: maps3d_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ruio
+--
+
+ALTER SEQUENCE maps3d_id_seq OWNED BY maps3d.id;
+
+
+--
+-- Name: roles; Type: TABLE; Schema: public; Owner: ruio; Tablespace: 
+--
+
+CREATE TABLE roles (
+    id integer NOT NULL,
+    name character varying(64)
+);
+
+
+ALTER TABLE public.roles OWNER TO ruio;
+
+--
+-- Name: roles_id_seq; Type: SEQUENCE; Schema: public; Owner: ruio
+--
+
+CREATE SEQUENCE roles_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.roles_id_seq OWNER TO ruio;
+
+--
+-- Name: roles_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ruio
+--
+
+ALTER SEQUENCE roles_id_seq OWNED BY roles.id;
+
+
+--
+-- Name: stations; Type: TABLE; Schema: public; Owner: ruio; Tablespace: 
+--
+
+CREATE TABLE stations (
+    id integer NOT NULL,
+    name character varying(64),
+    coordinates geometry(Point),
+    bounds geometry(Polygon),
+    status character varying(32),
+    map_id integer,
+    draggable boolean
+);
+
+
+ALTER TABLE public.stations OWNER TO ruio;
+
+--
+-- Name: stations_id_seq; Type: SEQUENCE; Schema: public; Owner: ruio
+--
+
+CREATE SEQUENCE stations_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.stations_id_seq OWNER TO ruio;
+
+--
+-- Name: stations_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ruio
+--
+
+ALTER SEQUENCE stations_id_seq OWNED BY stations.id;
+
+
+--
+-- Name: users; Type: TABLE; Schema: public; Owner: ruio; Tablespace: 
+--
+
+CREATE TABLE users (
+    id integer NOT NULL,
+    username character varying(64),
+    email character varying(128),
+    password_hash character varying(128),
+    role_id integer
+);
+
+
+ALTER TABLE public.users OWNER TO ruio;
+
+--
+-- Name: users_id_seq; Type: SEQUENCE; Schema: public; Owner: ruio
+--
+
+CREATE SEQUENCE users_id_seq
+    START WITH 1
+    INCREMENT BY 1
+    NO MINVALUE
+    NO MAXVALUE
+    CACHE 1;
+
+
+ALTER TABLE public.users_id_seq OWNER TO ruio;
+
+--
+-- Name: users_id_seq; Type: SEQUENCE OWNED BY; Schema: public; Owner: ruio
+--
+
+ALTER SEQUENCE users_id_seq OWNED BY users.id;
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: ruio
+--
+
+ALTER TABLE ONLY maps2d ALTER COLUMN id SET DEFAULT nextval('maps2d_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: ruio
+--
+
+ALTER TABLE ONLY maps3d ALTER COLUMN id SET DEFAULT nextval('maps3d_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: ruio
+--
+
+ALTER TABLE ONLY roles ALTER COLUMN id SET DEFAULT nextval('roles_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: ruio
+--
+
+ALTER TABLE ONLY stations ALTER COLUMN id SET DEFAULT nextval('stations_id_seq'::regclass);
+
+
+--
+-- Name: id; Type: DEFAULT; Schema: public; Owner: ruio
+--
+
+ALTER TABLE ONLY users ALTER COLUMN id SET DEFAULT nextval('users_id_seq'::regclass);
+
+
+--
+-- Data for Name: alembic_version; Type: TABLE DATA; Schema: public; Owner: ruio
+--
+
+COPY alembic_version (version_num) FROM stdin;
+326a21953ff9
+\.
+
+
+--
+-- Data for Name: maps2d; Type: TABLE DATA; Schema: public; Owner: ruio
+--
+
+COPY maps2d (id, name, center, bounds, zoom, forbidden_areas, interesting_areas) FROM stdin;
+1	Kennet	0101000020E610000033333333338356C01F85EB51B81E4240	0102000020E61000000500000033333333338356C03D0AD7A3701D424033333333338356C00000000000204240C3F5285C8F8256C01F85EB51B81E4240C3F5285C8F8256C03D0AD7A3701D424033333333338356C03D0AD7A3701D4240	17	\N	\N
+2	San Diego	0101000020E6100000D7A3703D0A475DC09A99999999594040	0102000020E610000005000000295C8FC2F5485DC0D7A3703D0A574040295C8FC2F5485DC07B14AE47E15A404014AE47E17A445DC07B14AE47E15A404014AE47E17A445DC0D7A3703D0A574040295C8FC2F5485DC0D7A3703D0A574040	17	\N	\N
+\.
+
+
+--
+-- Name: maps2d_id_seq; Type: SEQUENCE SET; Schema: public; Owner: ruio
+--
+
+SELECT pg_catalog.setval('maps2d_id_seq', 2, true);
+
+
+--
+-- Data for Name: maps3d; Type: TABLE DATA; Schema: public; Owner: ruio
+--
+
+COPY maps3d (id, name) FROM stdin;
+\.
+
+
+--
+-- Name: maps3d_id_seq; Type: SEQUENCE SET; Schema: public; Owner: ruio
+--
+
+SELECT pg_catalog.setval('maps3d_id_seq', 1, false);
+
+
+--
+-- Data for Name: roles; Type: TABLE DATA; Schema: public; Owner: ruio
+--
+
+COPY roles (id, name) FROM stdin;
+\.
+
+
+--
+-- Name: roles_id_seq; Type: SEQUENCE SET; Schema: public; Owner: ruio
+--
+
+SELECT pg_catalog.setval('roles_id_seq', 1, false);
+
+
+--
+-- Data for Name: spatial_ref_sys; Type: TABLE DATA; Schema: public; Owner: ruio
+--
+
+COPY spatial_ref_sys (srid, auth_name, auth_srid, srtext, proj4text) FROM stdin;
+\.
+
+
+--
+-- Data for Name: stations; Type: TABLE DATA; Schema: public; Owner: ruio
+--
+
+COPY stations (id, name, coordinates, bounds, status, map_id, draggable) FROM stdin;
+8	Station number 1	0101000000F6FDFFAFB68256C0091E1F689E1D4240	0103000000010000000600000006C286A9E18256C03D0AD7A3701D4240C3F5285C8F8256C03D0AD7A3701D4240C3F5285C8F8256C0A9611B0B2C1E4240E7DC3AC1D58256C0FCF1A4D4241E42409E01AD67DA8256C037C49E941E1E424006C286A9E18256C03D0AD7A3701D4240	active	1	t
+9	Station number 2	010100000043F5FF3F088356C02C33C804AC1D4240	0103000000010000000500000033333333338356C03D0AD7A3701D424006C286A9E18256C03D0AD7A3701D42409E01AD67DA8256C037C49E941E1E424033333333338356C037C49E941E1E424033333333338356C03D0AD7A3701D4240	active	1	t
+10	Station number 3	010100000043F5FF3F088356C042557524911E4240	0103000000010000000600000033333333338356C037C49E941E1E42409E01AD67DA8256C037C49E941E1E4240E7DC3AC1D58256C0FCF1A4D4241E424068A3719AED8256C0CF3587B4041F424033333333338356C0EE7AC44AF01E424033333333338356C037C49E941E1E4240	active	1	t
+11	Station number 4	01010000004FF2FFB7BD8256C0D79B88E6B01E4240	01030000000100000006000000E7DC3AC1D58256C0FCF1A4D4241E4240C3F5285C8F8256C0A9611B0B2C1E4240C3F5285C8F8256C01F85EB51B81E42405979F3A3D18256C04B8C80E13C1F424068A3719AED8256C0CF3587B4041F4240E7DC3AC1D58256C0FCF1A4D4241E4240	active	1	t
+12	Station number 5	01010000009EFCFFB7178356C0D41B8019641F4240	0103000000010000000500000033333333338356C0EE7AC44AF01E424068A3719AED8256C0CF3587B4041F42405979F3A3D18256C04B8C80E13C1F424033333333338356C0000000000020424033333333338356C0EE7AC44AF01E4240	active	1	t
+\.
+
+
+--
+-- Name: stations_id_seq; Type: SEQUENCE SET; Schema: public; Owner: ruio
+--
+
+SELECT pg_catalog.setval('stations_id_seq', 12, true);
+
+
+--
+-- Data for Name: users; Type: TABLE DATA; Schema: public; Owner: ruio
+--
+
+COPY users (id, username, email, password_hash, role_id) FROM stdin;
+\.
+
+
+--
+-- Name: users_id_seq; Type: SEQUENCE SET; Schema: public; Owner: ruio
+--
+
+SELECT pg_catalog.setval('users_id_seq', 1, false);
+
+
+SET search_path = topology, pg_catalog;
+
+--
+-- Data for Name: layer; Type: TABLE DATA; Schema: topology; Owner: ruio
+--
+
+COPY layer (topology_id, layer_id, schema_name, table_name, feature_column, feature_type, level, child_id) FROM stdin;
+\.
+
+
+--
+-- Data for Name: topology; Type: TABLE DATA; Schema: topology; Owner: ruio
+--
+
+COPY topology (id, name, srid, "precision", hasz) FROM stdin;
+\.
+
+
+SET search_path = public, pg_catalog;
+
+--
+-- Name: maps2d_name_key; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY maps2d
+    ADD CONSTRAINT maps2d_name_key UNIQUE (name);
+
+
+--
+-- Name: maps2d_pkey; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY maps2d
+    ADD CONSTRAINT maps2d_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: maps3d_name_key; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY maps3d
+    ADD CONSTRAINT maps3d_name_key UNIQUE (name);
+
+
+--
+-- Name: maps3d_pkey; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY maps3d
+    ADD CONSTRAINT maps3d_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: roles_name_key; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY roles
+    ADD CONSTRAINT roles_name_key UNIQUE (name);
+
+
+--
+-- Name: roles_pkey; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY roles
+    ADD CONSTRAINT roles_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: stations_name_key; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY stations
+    ADD CONSTRAINT stations_name_key UNIQUE (name);
+
+
+--
+-- Name: stations_pkey; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY stations
+    ADD CONSTRAINT stations_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: users_email_key; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_email_key UNIQUE (email);
+
+
+--
+-- Name: users_pkey; Type: CONSTRAINT; Schema: public; Owner: ruio; Tablespace: 
+--
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_pkey PRIMARY KEY (id);
+
+
+--
+-- Name: ix_users_username; Type: INDEX; Schema: public; Owner: ruio; Tablespace: 
+--
+
+CREATE UNIQUE INDEX ix_users_username ON users USING btree (username);
+
+
+--
+-- Name: stations_map_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: ruio
+--
+
+ALTER TABLE ONLY stations
+    ADD CONSTRAINT stations_map_id_fkey FOREIGN KEY (map_id) REFERENCES maps2d(id);
+
+
+--
+-- Name: users_role_id_fkey; Type: FK CONSTRAINT; Schema: public; Owner: ruio
+--
+
+ALTER TABLE ONLY users
+    ADD CONSTRAINT users_role_id_fkey FOREIGN KEY (role_id) REFERENCES roles(id);
+
+
+--
+-- Name: public; Type: ACL; Schema: -; Owner: ruio
+--
+
+REVOKE ALL ON SCHEMA public FROM PUBLIC;
+REVOKE ALL ON SCHEMA public FROM ruio;
+GRANT ALL ON SCHEMA public TO ruio;
+GRANT ALL ON SCHEMA public TO PUBLIC;
+
+
+--
+-- PostgreSQL database dump complete
+--
+
