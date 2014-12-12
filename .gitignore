@@ -89,3 +89,4 @@ saltstack/pillar
 saltstack/salt/top.sls
 saltstack/salt/git/files
 saltstack/salt/archon
+saltstack/salt/postgresql/files/archon_db_backup

@@ -496,7 +496,8 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
                     get('/root/' + instance_name + '.pub', DEFAULT_FILE_DIR)
                     print('Minion key generated and downloaded in {}'.format(DEFAULT_FILE_DIR))
 
-            # Add this line otherwise SSH connection fails
+            # We should break from here into another function due a fabric bug!!!
+            # https://github.com/fabric/fabric/issues/1070
             time.sleep(5)
 
             # Connect to the instance, bootstrap salt and install the keys
