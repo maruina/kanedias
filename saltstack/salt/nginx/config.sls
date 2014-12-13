@@ -33,4 +33,38 @@ nginx_example_ssl_conf:
     - context:
         parameters: {{ parameters }}
 
+  {% if 'htaccess' in parameters %}
+      {% if parameters['htaccess']['enable'] %}
+        {% set htpwd_pkg = 'htpwd_pkg_' ~ name %}
+        {% set htacc_file = 'htpwd_file_' ~ name %}
+
+{{ htpwd_pkg }}:
+  pkg.installed:
+    - name: {{ nginx.lookup.apache_utils }}
+
+{{ htacc_file }}:
+  file.managed:
+    - name: {{ parameters['hpasswd']['file'] }}
+    - user: nginx
+    - group: nginx
+    - mode: 644
+
+        {% for user, password in parameters['htaccess']['user'].iteritems() %}
+          {% set htpwd_id = 'htpwd_' ~ user %}
+
+{{ htpwd_id }}:
+  cmd.run:
+    - name: htpasswd -db {{ parameters['htaccess']['file'] }} {{ user }} {{ password }}
+
+        {% endfor %}
+      {% else %}
+
+{{ htacc_file }}:
+  file.absent:
+    - name: {{ parameters['hpasswd']['file'] }}
+
+      {% endif %}
+
+  {% endif %}
+
 {% endfor %}

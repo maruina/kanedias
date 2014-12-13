@@ -17,4 +17,11 @@ nginx:
       # If you don't have a static folder, use the python_dir and set the location to /
       static_dir: /var/www/archon_frontend
       # Optional redirect from an old website
+      # TODO: add support for multiple redirect
       redirect: www.olddomain.com
+      htaccess:
+        enable: True
+        file: /path/to/htaccess
+        user:
+          user1: password1
+          user2: password2

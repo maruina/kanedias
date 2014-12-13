@@ -4,10 +4,10 @@ include:
   - git.install
 
 {% for name, parameters in salt['pillar.get']('git:repository').iteritems() %}
-  {% set git_state_id = 'git_repo_' ~ name %}
-  {% set file_git_id = 'file_git_' ~ name %}
+  {% set git_repo = 'git_repo_' ~ name %}
+  {% set git_ssh_key = 'git_ssh_key_' ~ name %}
 
-{{ file_git_id }}:
+{{ git_ssh_key }}:
   file.managed:
     - name: /etc/git_keys/{{ parameters['identity'] }}
     - source: salt://git/files/{{ parameters['identity'] }}
@@ -15,7 +15,7 @@ include:
     - makedirs: True
     - replace: False
 
-{{ git_state_id }}:
+{{ git_repo }}:
   git.latest:
     - name: {{ name }}
     - rev: {{ parameters['rev'] }}
@@ -27,9 +27,9 @@ include:
       - sls: git.install
 
   {% if parameters['user'] %}
-    {% set git_dir_id = 'dir_git_' ~ name %}
+    {% set git_dir_mode = 'git_dir_mode_' ~ name %}
 
-{{ git_dir_id }}:
+{{ git_dir_mode }}:
   file.directory:
     - name: {{ parameters['target'] }}
     - user: {{ parameters['user'] }}
