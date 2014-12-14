@@ -17,3 +17,4 @@ miniconda_path:
     - user: root
     - group: root
     - mode: 644
+    - template: jinja

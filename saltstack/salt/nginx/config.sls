@@ -34,9 +34,10 @@ nginx_example_ssl_conf:
         parameters: {{ parameters }}
 
   {% if 'htaccess' in parameters %}
+      {% set htacc_file = 'htpwd_file_' ~ name %}
       {% if parameters['htaccess']['enable'] %}
         {% set htpwd_pkg = 'htpwd_pkg_' ~ name %}
-        {% set htacc_file = 'htpwd_file_' ~ name %}
+
 
 {{ htpwd_pkg }}:
   pkg.installed:
@@ -44,7 +45,7 @@ nginx_example_ssl_conf:
 
 {{ htacc_file }}:
   file.managed:
-    - name: {{ parameters['hpasswd']['file'] }}
+    - name: {{ parameters['htaccess']['file'] }}
     - user: nginx
     - group: nginx
     - mode: 644
@@ -61,7 +62,7 @@ nginx_example_ssl_conf:
 
 {{ htacc_file }}:
   file.absent:
-    - name: {{ parameters['hpasswd']['file'] }}
+    - name: {{ parameters['htaccess']['file'] }}
 
       {% endif %}
 
