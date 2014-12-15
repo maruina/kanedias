@@ -48,6 +48,7 @@ nginx_example_ssl_conf:
     - name: {{ parameters['htaccess']['file'] }}
     - user: nginx
     - group: nginx
+    - replace: False
     - mode: 644
 
         {% for user, password in parameters['htaccess']['user'].iteritems() %}

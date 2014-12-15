@@ -6,7 +6,18 @@ pg_hba_conf:
     - source: salt://postgresql/files/pg_hba.conf
     - user: postgres
     - group: postgres
-    - mode: 700
+    - mode: 600
+    - template: jinja
+    - watch_in:
+      - service: {{ postgresql.lookup.server_service }}
+
+postgresql_conf:
+  file.managed:
+    - name: {{ postgresql.lookup.conf_dir }}/postgresql.conf
+    - source: salt://postgresql/files/postgresql.conf
+    - user: postgres
+    - group: postgres
+    - mode: 600
     - template: jinja
     - watch_in:
       - service: {{ postgresql.lookup.server_service }}

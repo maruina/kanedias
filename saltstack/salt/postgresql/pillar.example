@@ -1,4 +1,6 @@
 postgresql:
+  conf:
+    listen_addresses: '*'
   server:
     install: True
     postgis: True
