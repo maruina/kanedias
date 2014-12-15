@@ -16,4 +16,11 @@ install_postgis_topology_{{ db }}:
     - require:
       - service: {{ postgresql.lookup.server_service }}
 
+install_postgis_adminpack_{{ db }}:
+  postgres_extension.present:
+    - name: adminpack
+    - maintenance_db: {{ db }}
+    - require:
+      - service: {{ postgresql.lookup.server_service }}
+
 {% endfor %}

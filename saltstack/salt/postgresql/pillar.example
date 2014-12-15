@@ -22,8 +22,10 @@ postgresql:
   user:
     localUser:
       password: 'somepass'
+      superuser: True
     remoteUser:
       password: 'otherpass'
+      superuser: False
 
   acl:
     - ['local', 'db1', 'localUser']

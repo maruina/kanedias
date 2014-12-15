@@ -1,7 +1,14 @@
 {% set postgresql = salt['pillar.get']('postgresql', {
     'lookup': salt['grains.filter_by']({
         'Debian': {
-            'package': 'todo'
+            'server': 'postgresql-9.3',
+            'server_service': 'postgresql',
+            'contrib': 'postgresql-contrib',
+            'devel': 'postgresql-server-dev-9.3',
+            'python': 'python-dev',
+            'postgis': 'postgresql-9.3-postgis-2.1',
+            'conf_dir': '/etc/postgresql/9.3/main/',
+            'profile_dir': '/etc/profile.d'
         },
         'RedHat': {
             'server': 'postgresql93-server',

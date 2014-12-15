@@ -1,13 +1,16 @@
 {% from 'postgresql/map.jinja' import postgresql with context %}
 
-{% for name, user in salt['pillar.get']('postgresql:user', {}).items() %}
+{% for name, user in salt['pillar.get']('postgresql:user').items() %}
 {% set user_state_id = 'postgresql_user_' ~ name %}
 
 {{ user_state_id }}:
   postgres_user.present:
     - name: {{ name }}
-    - password: {{ user.password }}
+    - password: {{ user['password'] }}
     - login: True
+    {% if user['superuser'] %}
+    - superuser: True
+    {% endif %}
     - require:
       - service: {{ postgresql.lookup.server_service }}
 
