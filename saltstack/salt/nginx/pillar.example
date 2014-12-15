@@ -1,5 +1,10 @@
 nginx:
+  lookup:
+    vhost_available: /etc/nginx/sites-available
+    vhost_enabled: /etc/nginx/sites-enabled
   server:
+    # debian|nginx: debian install from debian, nginx add nginx repository for both debian and centos
+    source: debian
     example_files: False
   website:
     mywordpress:
