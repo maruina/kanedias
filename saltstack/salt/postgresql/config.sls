@@ -3,7 +3,7 @@
 pg_hba_conf:
   file.managed:
     - name: {{ postgresql.lookup.conf_dir }}/pg_hba.conf
-    - source: salt://postgresql/files/pg_hba.conf
+    - source: salt://postgresql/files/pg_hba-{{ salt['grains.get']('os_family') }}.conf
     - user: postgres
     - group: postgres
     - mode: 600
@@ -14,7 +14,7 @@ pg_hba_conf:
 postgresql_conf:
   file.managed:
     - name: {{ postgresql.lookup.conf_dir }}/postgresql.conf
-    - source: salt://postgresql/files/postgresql.conf
+    - source: salt://postgresql/files/postgresql-{{ salt['grains.get']('os_family') }}.conf
     - user: postgres
     - group: postgres
     - mode: 600
