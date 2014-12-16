@@ -120,3 +120,14 @@ def create_instance(ec2_conn, name, image_id, key_name, type_id, subnet_id, secu
     else:
         print('Instance status: ' + status)
     return instance
+
+
+def test_instance_exists(instance_id, ec2_conn):
+    # Check if the instance exists
+    reservations = ec2_conn.get_all_instances(instance_ids=[instance_id])
+    if not reservations:
+        print(red('Error, instance {} does not exitst'.format(instance_id)))
+        return None
+    else:
+        instance = reservations[0].instances[0]
+        return instance
