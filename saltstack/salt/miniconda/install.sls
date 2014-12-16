@@ -5,7 +5,7 @@
 miniconda_download:
   cmd.run:
     - name: wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
-    - unless: test -f miniconda.sh
+    - unless: test -f {{ pillar['miniconda']['path'] }}/bin/conda
 
 {% endif %}
 
