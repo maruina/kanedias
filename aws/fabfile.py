@@ -14,7 +14,7 @@ from fabric.contrib.project import rsync_project
 from load_config import AWS_KEY, AWS_ID, AMI_LIST, AWS_REGIONS, AMI_USER, REGION, DEFAULT_OS, DEFAULT_SSH_DIR,\
     DEFAULT_FILE_DIR, DEFAULT_INTERNAL_DOMAIN
 from utils import test_vpc_cidr, calculate_public_private_cidr, find_ssh_user, find_subnet_nat_instance, get_zone_id,\
-    create_instance
+    create_instance, test_instance_exists
 
 
 @task
@@ -422,7 +422,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
 
 
 @task
-def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def generate_salt_keys(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
     Install salt minion on target instance_id. Assumpition: only one Salt Master per VPC
     :param instance_id:
@@ -431,7 +431,6 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
     :param region:
     :return:
     """
-    # https://github.com/fabric/fabric/issues/1070
     # Check if the instance exists
     vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
@@ -443,19 +442,20 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
         instance = reservations[0].instances[0]
 
     instance_name = instance.tags['Name']
-    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    instance_ssh_key = os.path.join(DEFAULT_SSH_DIR, instance.key_name + '.pem')
     instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
 
     print('Installing salt on instance {} ({})'.format(instance_name, instance.id))
 
     # Find the saltmaster
-    saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*'})
+    saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*',
+                                                                  'instance-state-name': 'running'})
     if not saltmaster_reservations:
         print(red('Error, saltmaster does not exists in this region'))
         sys.exit(1)
     else:
         saltmaster = saltmaster_reservations[0].instances[0]
-        saltmaster_ssh_key = DEFAULT_SSH_DIR + saltmaster.key_name + '.pem'
+        saltmaster_ssh_key = os.path.join(DEFAULT_SSH_DIR, saltmaster.key_name + '.pem')
         saltmaster_private_ip = saltmaster.private_ip_address
         saltmaster_ssh_user = find_ssh_user(instance_id=saltmaster.id, ec2_conn=ec2_conn)
 
@@ -477,12 +477,9 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
         else:
             print('Installing salt')
 
-            salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
-            bootstrap_script = os.path.join(salt_script_folder, 'bootstrap_salt.sh')
-
             # Generate a Salt Master accepted key and download it if you don't have it
-            if os.path.isfile(DEFAULT_FILE_DIR + instance_name + '.pub') and \
-                    os.path.isfile(DEFAULT_FILE_DIR + instance_name + '.pem'):
+            if os.path.isfile(os.path.join(DEFAULT_FILE_DIR, instance_name + '.pub')) and \
+                    os.path.isfile(os.path.join(DEFAULT_FILE_DIR, instance_name + '.pem')):
                 print('Key already generated')
             else:
                 # FIXME: handle systems with sudo access
@@ -496,36 +493,63 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
                     get('/root/' + instance_name + '.pub', DEFAULT_FILE_DIR)
                     print('Minion key generated and downloaded in {}'.format(DEFAULT_FILE_DIR))
 
-            # We should break from here into another function due a fabric bug!!!
-            # https://github.com/fabric/fabric/issues/1070
-            time.sleep(5)
 
-            # Connect to the instance, bootstrap salt and install the keys
-            # FIXME: handle systems with sudo access
-            with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' +
-                    instance.private_ip_address, user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
-                put(local_path=bootstrap_script, remote_path='/root/', mode=0700, use_sudo=True)
-                sudo('/root/bootstrap_salt.sh minion')
-                sudo('service salt-minion stop')
-                sudo('mv /etc/salt/pki/minion/minion.pem /etc/salt/pki/minion/minion.pem.bkp')
-                sudo('mv /etc/salt/pki/minion/minion.pub /etc/salt/pki/minion/minion.pub.bkp')
-                sudo('echo ' + instance_name + ' > /etc/salt/minion_id')
-                put(local_path=DEFAULT_FILE_DIR + instance_name + '.pem',
-                    remote_path='/etc/salt/pki/minion/' + instance_name + '.pem', use_sudo=True)
-                put(local_path=DEFAULT_FILE_DIR + instance_name + '.pub',
-                    remote_path='/etc/salt/pki/minion/' + instance_name + '.pub', use_sudo=True)
-                sudo('mv /etc/salt/pki/minion/' + instance_name + '.pem' + ' /etc/salt/pki/minion/minion.pem')
-                sudo('mv /etc/salt/pki/minion/' + instance_name + '.pub' + ' /etc/salt/pki/minion/minion.pub')
-                sudo('service salt-minion start')
+@task
+def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
 
-                # Test if salt can communicate with the master
-                with settings(warn_only=True):
-                    if sudo('salt-call state.highstate') == 0:
-                        print(green('Salt succesfully installed!'))
-                    else:
-                        print(red('Error, cannot execute salt-call'))
+    # Function broke from the previous due a fabric bug!!!
+    # https://github.com/fabric/fabric/issues/1070
+
+    # Check if the instance exists
+    vpc_conn = boto.vpc.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    instance = test_instance_exists(instance_id=instance_id, ec2_conn=ec2_conn)
+    if not instance:
+        print(red('Error, instance {} does not exitst'.format(instance_id)))
+        sys.exit(1)
+    else:
+        instance_name = instance.tags['Name']
+        instance_ssh_key = os.path.join(DEFAULT_SSH_DIR, instance.key_name + '.pem')
+        instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
+
+    # Find NAT instance parameters
+    nat_instance = find_subnet_nat_instance(subnet_id=instance.subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
+    if not nat_instance:
+        print(red('Error, NAT instance for instance {} not found'.format(instance.id)))
+        sys.exit(1)
+    else:
+        nat_ssh_user = find_ssh_user(instance_id=nat_instance.id, ec2_conn=ec2_conn)
+
+    salt_script_folder = os.path.abspath(os.path.join(os.path.abspath(os.curdir), os.pardir, 'saltstack'))
+    bootstrap_script = os.path.join(salt_script_folder, 'bootstrap_salt.sh')
+
+    # Connect to the instance, bootstrap salt and install the keys
+    # FIXME: handle systems with sudo access
+    with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' +
+            instance.private_ip_address, user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
+        put(local_path=bootstrap_script, remote_path='/root/', mode=0700, use_sudo=True)
+        sudo('/root/bootstrap_salt.sh minion')
+        sudo('/etc/init.d/salt-minion stop')
+        sudo('mv /etc/salt/pki/minion/minion.pem /etc/salt/pki/minion/minion.pem.bkp')
+        sudo('mv /etc/salt/pki/minion/minion.pub /etc/salt/pki/minion/minion.pub.bkp')
+        sudo('echo ' + instance_name + ' > /etc/salt/minion_id')
+        put(local_path=os.path.join(DEFAULT_FILE_DIR, instance_name + '.pem'),
+            remote_path='/etc/salt/pki/minion/' + instance_name + '.pem', use_sudo=True)
+        put(local_path=os.path.join(DEFAULT_FILE_DIR, instance_name + '.pub'),
+            remote_path='/etc/salt/pki/minion/' + instance_name + '.pub', use_sudo=True)
+        sudo('mv /etc/salt/pki/minion/' + instance_name + '.pem' + ' /etc/salt/pki/minion/minion.pem')
+        sudo('mv /etc/salt/pki/minion/' + instance_name + '.pub' + ' /etc/salt/pki/minion/minion.pub')
+        sudo('/etc/init.d/salt-minion start')
+
+        # Test if salt can communicate with the master
+        with settings(warn_only=True):
+            if sudo('salt-call test.ping') == 0:
+                print(green('Salt succesfully installed!'))
+            else:
+                print(red('Error, cannot execute salt-call'))
 
 
+@task
 def nuke_instance():
     pass
 
