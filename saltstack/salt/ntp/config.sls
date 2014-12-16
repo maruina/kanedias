@@ -9,4 +9,4 @@ ntp_conf:
     - mode: 644
     - template: jinja
     - watch_in:
-      - service: {{ ntp.lookup.service }}
+      - service: ntp_service
