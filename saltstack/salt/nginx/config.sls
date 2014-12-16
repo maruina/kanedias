@@ -37,7 +37,7 @@ nginx_default_conf:
     - mode: 644
     - template: jinja
     - watch_in:
-      - service: {{ nginx.lookup.service }}
+      - service: nginx_service
     - context:
         parameters: {{ parameters }}
 
