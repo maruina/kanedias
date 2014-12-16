@@ -2,8 +2,8 @@
     'lookup': salt['grains.filter_by']({
         'Debian': {
             'package': 'supervisor',
-            'service': 'todo',
-            'conf_file': 'todo'
+            'service': 'supervisor',
+            'conf_file': '/etc/supervisor/supervisord.conf'
         },
         'RedHat': {
             'package': 'supervisor',
