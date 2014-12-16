@@ -9,7 +9,7 @@ pg_hba_conf:
     - mode: 600
     - template: jinja
     - watch_in:
-      - service: {{ postgresql.lookup.server_service }}
+      - service: postgresql_server_service
 
 postgresql_conf:
   file.managed:
@@ -20,4 +20,4 @@ postgresql_conf:
     - mode: 600
     - template: jinja
     - watch_in:
-      - service: {{ postgresql.lookup.server_service }}
+      - service: postgresql_server_service
