@@ -1,7 +1,9 @@
 {% set ntp = salt['pillar.get']('ntp', {
     'lookup': salt['grains.filter_by']({
         'Debian': {
-            'package': 'ntp'
+            'package': 'ntp',
+            'service': 'ntp',
+            'conf_file': '/etc/ntp.conf'
         },
         'RedHat': {
             'package': 'ntp',

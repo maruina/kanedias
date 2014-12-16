@@ -10,3 +10,8 @@ ntp_conf:
     - template: jinja
     - watch_in:
       - service: ntp_service
+
+timezone_set:
+  timezone.system:
+    - name: {{ salt['pillar.get']('ntp:timezone') }}
+    - utc: {{ salt['pillar.get']('ntp:utc') }}

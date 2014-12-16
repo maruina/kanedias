@@ -9,4 +9,4 @@ ntp_service:
     - enable: True
     - reload: True
     - require:
-      - sls: nginx.install
+      - sls: ntp.install

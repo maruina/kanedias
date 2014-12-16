@@ -1,20 +1,5 @@
 ntp:
-  lookup:
-    client: ntp
-    server: ntpd
-    service: ntpd
-    ntpdate: ntpdate
-    ntp_conf: /etc/ntp.conf
-    ntpd_conf: /etc/ntpd.conf
-
-# Example for ntp
-ntp:
-  ntp_conf: salt://ntp/ntp-client.conf
-
-# Example for ntp.server
-ntp:
-  ntpd_conf: salt://ntp/ntp.conf
-
-# Configure remote NTP server for the client
-ntp:
+  timezone: UTC
+  utc: True
+  # Configure remote NTP server for the client
   ntp_servers: ["ntp1.inrim.it","ntp2.inrim.it","0.europe.pool.ntp.org","1.europe.pool.ntp.org"]
