@@ -1,9 +1,13 @@
 {% from 'miniconda/map.jinja' import miniconda with context %}
 
+{% if 'amd64' or 'x86_64' in salt['grains.get']('osarch') %}
+
 miniconda_download:
   cmd.run:
-    - name: wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-{{ salt['grains.get']('osarch', '') }}.sh -O miniconda.sh
+    - name: wget http://repo.continuum.io/miniconda/Miniconda-latest-Linux-x86_64.sh -O miniconda.sh
     - unless: test -f miniconda.sh
+
+{% endif %}
 
 miniconda_install:
   cmd.run:
