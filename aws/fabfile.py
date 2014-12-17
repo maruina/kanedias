@@ -605,6 +605,12 @@ def replace_instance(old_instance_id, op_system=None or 'CentOS', instance_type=
 
 
 @task
+def nuke_instance(instance_id, internal_domain=None or DEFAULT_INTERNAL_DOMAIN, aws_id=None or AWS_ID,
+                  aws_key=None or AWS_KEY, region=None or REGION):
+    pass
+
+
+@task
 def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                       region=None or REGION):
 
