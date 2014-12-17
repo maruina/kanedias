@@ -38,6 +38,23 @@ def print_vpcs_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None 
 
 
 @task
+def print_instances_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    """
+    Print all instances info inside the EC2 region
+    :param aws_id: Amazon Access Key ID
+    :param aws_key: Amazon Secret Access Key
+    :param region: Target region for the VPC
+    """
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    instances = [x.instances[0] for x in ec2_conn.get_all_instances()]
+    print("ID\t\tInstance name\t\t\t\t\tStatus\tPrivate IP\tPublic IP\tSecurity Group")
+    for instance in instances:
+        print(green("{}\t{}\t{}\t{}\t{}\t{}".format(instance.id, instance.tags['Name'], instance.state,
+                                                    instance.private_ip_address, instance.ip_address,
+                                                    instance.groups[0].name)))
+
+
+@task
 def build_private_public_vpc(cidr, key_user, domain_name, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
                              region=None or REGION):
     """
@@ -556,9 +573,9 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
 
 
 @task
-def replace_instance(old_instance_id, op_system=None or 'CentOS',
-                     instance_type=None or 't2.micro', internal_domain=None or DEFAULT_INTERNAL_DOMAIN,
-                     aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+def replace_instance(old_instance_id, op_system=None or 'CentOS', instance_type=None or 't2.micro',
+                     internal_domain=None or DEFAULT_INTERNAL_DOMAIN, aws_id=None or AWS_ID, aws_key=None or AWS_KEY,
+                     region=None or REGION):
     """
     Replace an old instance with a new one with the same name, role and salt keys.
     :param old_instance_id: the instance id you want to replace
@@ -734,8 +751,3 @@ def restore_wordpress(instance_id, section, mysql_root_pass, mysql_db, www_user,
         sudo('mysqldump -u root --password=' + mysql_root_pass + ' ' + mysql_db + ' < /root/wp.db')
 
     print(green("Ok, wordpress restore complete!"))
-
-
-@task
-def print_instances_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
-    pass
