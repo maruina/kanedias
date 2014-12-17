@@ -285,7 +285,7 @@ def spin_saltmaster(subnet_id, key_user, op_system=None or DEFAULT_OS, aws_id=No
 
 
 @task
-def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op_system=None or 'CentOS',
+def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_name, op_system=None or 'CentOS',
                   instance_type=None or 't2.micro', internal_domain=None or DEFAULT_INTERNAL_DOMAIN,
                   aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
     """
@@ -306,14 +306,14 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
 
     print("Ready to spin a new {} instance".format(op_system))
 
-    security_groups = ec2_conn.get_all_security_groups(filters={'description': security_group.upper() + '*'})
+    security_groups = ec2_conn.get_all_security_groups(filters={'description': security_group_name.upper() + '*'})
     if not security_groups:
         print('You specified a security group that not exists, I will create it')
         # Create a new security group based on the tag
-        instance_security_group = ec2_conn.create_security_group(security_group.upper() + '_SG',
-                                                                 security_group.upper() + ' Security Group',
+        instance_security_group = ec2_conn.create_security_group(security_group_name.upper() + '_SG',
+                                                                 security_group_name.upper() + ' Security Group',
                                                                  vpc_id=subnet.vpc_id)
-        instance_security_group.add_tag('Name', security_group.upper() + ' Security Group')
+        instance_security_group.add_tag('Name', security_group_name.upper() + ' Security Group')
         instance_security_group.authorize(ip_protocol='icmp', from_port=-1, to_port=-1, cidr_ip=vpc.cidr_block)
         instance_security_group.authorize(ip_protocol='tcp', from_port=22, to_port=22, cidr_ip='0.0.0.0/0')
         if 'WEB' in instance_tag.upper():
@@ -350,7 +350,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
 
     # FIXME: count only running instance, change the filter
     # How many instance of this type already running?
-    instances = ec2_conn.get_all_instances(filters={'tag:Name': instance_tag + '*'})
+    instances = ec2_conn.get_all_instances(filters={'tag:Name': instance_tag + '*', 'instance-state-name': 'running'})
     # Instance name: web.prd.001.eu-west-1a.example.com
     instance_name = instance_tag + '.' + env_tag + '.' + str(len(instances) + 1).zfill(3) + '.' +\
                     subnet.availability_zone + '.' + DEFAULT_INTERNAL_DOMAIN
@@ -418,7 +418,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group, op
             sudo('echo ' + instance.private_ip_address + ' ' + instance_name + ' >> /etc/hosts')
 
     print(green("Instance {} spinned!".format(instance.id)))
-    return True
+    return instance
 
 
 @task
@@ -480,18 +480,24 @@ def generate_salt_keys(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_K
             # Generate a Salt Master accepted key and download it if you don't have it
             if os.path.isfile(os.path.join(DEFAULT_FILE_DIR, instance_name + '.pub')) and \
                     os.path.isfile(os.path.join(DEFAULT_FILE_DIR, instance_name + '.pem')):
-                print('Key already generated')
+                print('Key already present')
             else:
                 # FIXME: handle systems with sudo access
                 with settings(gateway=nat_instance.ip_address, host_string=saltmaster_ssh_user + '@' +
-                        saltmaster_private_ip, user=nat_ssh_user, key_filename=saltmaster_ssh_key, forward_agent=True):
-                    sudo('salt-key --gen-keys=' + instance_name)
-                    sudo('cp ' + instance_name + '.pub /etc/salt/pki/master/minions/')
-                    sudo('mv /etc/salt/pki/master/minions/' + instance_name + '.pub /etc/salt/pki/master/minions/' +
-                         instance_name)
-                    get('/root/' + instance_name + '.pem', DEFAULT_FILE_DIR)
-                    get('/root/' + instance_name + '.pub', DEFAULT_FILE_DIR)
-                    print('Minion key generated and downloaded in {}'.format(DEFAULT_FILE_DIR))
+                              saltmaster_private_ip, user=nat_ssh_user, key_filename=saltmaster_ssh_key,
+                              forward_agent=True, warn_only=True):
+                    # Try to download the keys if I already generated them but I don't have them in local
+                    if get('/root/' + instance_name + '.pem', DEFAULT_FILE_DIR) == 0 and \
+                            get('/root/' + instance_name + '.pub', DEFAULT_FILE_DIR) == 0:
+                        print('Key already generated and present')
+                    else:
+                        sudo('salt-key --gen-keys=' + instance_name)
+                        sudo('cp ' + instance_name + '.pub /etc/salt/pki/master/minions/')
+                        sudo('mv /etc/salt/pki/master/minions/' + instance_name + '.pub /etc/salt/pki/master/minions/' +
+                             instance_name)
+                        get('/root/' + instance_name + '.pem', DEFAULT_FILE_DIR)
+                        get('/root/' + instance_name + '.pub', DEFAULT_FILE_DIR)
+                        print('Minion key generated and downloaded in {}'.format(DEFAULT_FILE_DIR))
 
 
 @task
@@ -550,8 +556,35 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
 
 
 @task
-def nuke_instance():
-    pass
+def replace_instance(old_instance_id, op_system=None or 'CentOS',
+                     instance_type=None or 't2.micro', internal_domain=None or DEFAULT_INTERNAL_DOMAIN,
+                     aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=None or REGION):
+    """
+    Replace an old instance with a new one with the same name, role and salt keys.
+    :param old_instance_id: the instance id you want to replace
+    :param op_system: the new operating system
+    :param instance_type: the AWS instace you want to spin
+    :param internal_domain: your internal domain
+    :param aws_id: Amazon Access Key ID
+    :param aws_key: Amazon Secret Access Key
+    :param region: Target region for the VPC
+
+    :return:
+    """
+    # Check if the instance exists
+    ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
+    instance = test_instance_exists(instance_id=old_instance_id, ec2_conn=ec2_conn)
+    if not instance:
+        print(red('Error, instance {} does not exitst'.format(old_instance_id)))
+        sys.exit(1)
+    else:
+        instance_tag, env_tag = instance.tags['Name'].split('.')[:2]
+        new_instance = spin_instance(instance_tag=instance_tag, env_tag=env_tag, subnet_id=instance.subnet_id,
+                                     key_name=instance.key_name, security_group_name=instance.groups[0].name, op_system=op_system,
+                                     instance_type=instance_type, internal_domain=internal_domain, aws_id=aws_id, aws_key=aws_key,
+                                     region=region)
+        if new_instance:
+            print(green("New instance {} [{}] spinned!".format(new_instance.tags['Name'], new_instance.id)))
 
 
 @task
