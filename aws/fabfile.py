@@ -611,6 +611,10 @@ def replace_instance(old_instance_id, op_system=None or 'CentOS', instance_type=
 @task
 def nuke_instance(instance_id, internal_domain=None or DEFAULT_INTERNAL_DOMAIN, aws_id=None or AWS_ID,
                   aws_key=None or AWS_KEY, region=None or REGION):
+    # Remove any public DNS entry
+    # Remove any private DNS entry
+    # Release elastic IP
+    # Remove the key from NAT: ssh-keygen -R hostname
     pass
 
 
