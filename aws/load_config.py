@@ -19,6 +19,7 @@ if os.path.exists('config.ini'):
         DEFAULT_SSH_DIR = os.path.expanduser(boto_config.get('Config', 'default_ssh_dir'))
         DEFAULT_FILE_DIR = os.path.expanduser(boto_config.get('Config', 'default_file_dir'))
         DEFAULT_INTERNAL_DOMAIN = boto_config.get('Config', 'default_internal_domain')
+        DEFAULT_PUBLIC_DOMAIN = boto_config.get('Config', 'default_public_domain')
     else:
         print(red('Error: config section is missing, abort!'))
         sys.exit(1)

@@ -46,7 +46,7 @@ def print_instances_info(aws_id=None or AWS_ID, aws_key=None or AWS_KEY, region=
     :param region: Target region for the VPC
     """
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
-    instances = [x.instances[0] for x in ec2_conn.get_all_instances()]
+    instances = [x.instances[0] for x in ec2_conn.get_all_instances(filters={'instance-state-name': 'running'})]
     print("ID\t\tInstance name\t\t\t\t\tStatus\tPrivate IP\tPublic IP\tSecurity Group")
     for instance in instances:
         print(green("{}\t{}\t{}\t{}\t{}\t{}".format(instance.id, instance.tags['Name'], instance.state,
@@ -425,6 +425,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_nam
     if 'Debian' in op_system:
         with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
                       user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True, warn_only=True):
+            sudo('hostname ' + instance_name)
             sudo('echo ' + instance_name + ' > /etc/hostname')
             sudo('echo ' + instance.private_ip_address + ' ' + instance_name + ' >> /etc/hosts')
     if 'CentOS' in op_system:
@@ -462,7 +463,7 @@ def generate_salt_keys(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_K
     instance_ssh_key = os.path.join(DEFAULT_SSH_DIR, instance.key_name + '.pem')
     instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
 
-    print('Installing salt on instance {} ({})'.format(instance_name, instance.id))
+    print('Generating salt keys for instance {} [{}]'.format(instance_name, instance.id))
 
     # Find the saltmaster
     saltmaster_reservations = ec2_conn.get_all_instances(filters={'tag:Name': 'saltmaster*',
@@ -487,13 +488,6 @@ def generate_salt_keys(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_K
     # Test if salt is already installed
     with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' + instance.private_ip_address,
                   user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True, warn_only=True):
-        result = sudo('command -v salt-call')
-        if result == 0:
-            print(green('Salt already installed on instance {} ({})'.format(instance_name, instance.id)))
-            sys.exit(0)
-        else:
-            print('Installing salt')
-
             # Generate a Salt Master accepted key and download it if you don't have it
             if os.path.isfile(os.path.join(DEFAULT_FILE_DIR, instance_name + '.pub')) and \
                     os.path.isfile(os.path.join(DEFAULT_FILE_DIR, instance_name + '.pem')):
@@ -549,9 +543,18 @@ def install_salt(instance_id, aws_id=None or AWS_ID, aws_key=None or AWS_KEY, re
     # Connect to the instance, bootstrap salt and install the keys
     # FIXME: handle systems with sudo access
     with settings(gateway=nat_instance.ip_address, host_string=instance_ssh_user + '@' +
-            instance.private_ip_address, user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True):
-        put(local_path=bootstrap_script, remote_path='/root/', mode=0700, use_sudo=True)
-        sudo('/root/bootstrap_salt.sh minion')
+            instance.private_ip_address, user=nat_ssh_user, key_filename=instance_ssh_key, forward_agent=True,
+                  warn_only=True):
+        result = sudo('command -v salt-call')
+        if result == 0:
+            print(green('Salt already installed on instance {} ({})'.format(instance_name, instance.id)))
+            sys.exit(0)
+        else:
+            print('Installing salt')
+            put(local_path=bootstrap_script, remote_path='/root/', mode=0700, use_sudo=True)
+            sudo('/root/bootstrap_salt.sh minion')
+
+        # Installing keys
         sudo('/etc/init.d/salt-minion stop')
         sudo('mv /etc/salt/pki/minion/minion.pem /etc/salt/pki/minion/minion.pem.bkp')
         sudo('mv /etc/salt/pki/minion/minion.pub /etc/salt/pki/minion/minion.pub.bkp')
@@ -588,6 +591,7 @@ def replace_instance(old_instance_id, op_system=None or 'CentOS', instance_type=
 
     :return:
     """
+    # TODO: keep elastic IP, private IP and public domain name
     # Check if the instance exists
     ec2_conn = boto.ec2.connect_to_region(region_name=region, aws_access_key_id=aws_id, aws_secret_access_key=aws_key)
     instance = test_instance_exists(instance_id=old_instance_id, ec2_conn=ec2_conn)

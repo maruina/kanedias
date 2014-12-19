@@ -12,8 +12,8 @@ def find_subnet_nat_instance(subnet_id, ec2_conn, vpc_conn):
     :return: The NAT instance public IP
     """
     routes = vpc_conn.get_all_route_tables()
-    subnet_route = [r for r in routes for a in r.associations if a.subnet_id and subnet_id in a.subnet_id][0]
-    instance_id = [r for r in subnet_route.routes if '0.0.0.0/0' in r.destination_cidr_block][0].instance_id
+    subnet_route_table = [r for r in routes for a in r.associations if a.subnet_id and subnet_id in a.subnet_id][0]
+    instance_id = [r for r in subnet_route_table.routes if '0.0.0.0/0' in r.destination_cidr_block][0].instance_id
     reservation = ec2_conn.get_all_instances(instance_ids=instance_id)[0]
     instance = reservation.instances[0]
     return instance
@@ -33,6 +33,8 @@ def find_ssh_user(instance_id, ec2_conn):
         return 'ec2-user'
     elif 'CentOS' in image.description:
         return 'root'
+    elif 'Debian' in image.description:
+        return 'admin'
     else:
         return 'ubuntu'
 
@@ -126,7 +128,6 @@ def test_instance_exists(instance_id, ec2_conn):
     # Check if the instance exists
     reservations = ec2_conn.get_all_instances(instance_ids=[instance_id])
     if not reservations:
-        print(red('Error, instance {} does not exitst'.format(instance_id)))
         return None
     else:
         instance = reservations[0].instances[0]

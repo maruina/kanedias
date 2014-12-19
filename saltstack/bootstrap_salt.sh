@@ -46,15 +46,11 @@ if [ -z ${salt_call} ] || [ -z ${wget} ] ; then
     elif [ "${ostype}" = "debian" ] ; then
         apt_get=`command -v apt-get` || { echo "Fatal error: Debian-like OS detected, but apt-get could not be found." ; exit 1 ; }
 
-        if [ -z ${salt_call} ] ; then
-            ${sudo} ${apt_get} install -y --no-install-recommends salt-common
-        fi
-
         if [ -z ${wget} ] ; then
             ${sudo} ${apt_get} install -y --no-install-recommends wget
         fi
     fi
 fi
 
-wget -O ${HOME}/install_salt.sh https://bootstrap.saltstack.com
+wget -O ${HOME}/install_salt.sh http://bootstrap.saltstack.com
 sudo sh ${HOME}/install_salt.sh ${salt_parms}

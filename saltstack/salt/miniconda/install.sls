@@ -1,5 +1,14 @@
 {% from 'miniconda/map.jinja' import miniconda with context %}
 
+{% if salt['grains.get']('os_family') == 'Debian' %}
+
+miniconda_install_prereq:
+  pkg.installed:
+    - pkgs:
+      - {{ miniconda.lookup.bzip2 }}
+
+{% endif %}
+
 {% if 'amd64' or 'x86_64' in salt['grains.get']('osarch') %}
 
 miniconda_download:

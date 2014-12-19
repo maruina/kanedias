@@ -63,7 +63,7 @@ nginx_default_conf:
 
 {{ htpwd_id }}:
   cmd.run:
-    - name: htpasswd -db {{ parameters['htaccess']['file'] }} {{ user }} {{ password }}
+    - name: htpasswd -mb {{ parameters['htaccess']['file'] }} {{ user }} {{ password }}
 
       {% endfor %}
     {% else %}

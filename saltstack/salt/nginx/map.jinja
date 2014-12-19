@@ -1,7 +1,7 @@
 {% set nginx = salt['pillar.get']('nginx', {
     'lookup': salt['grains.filter_by']({
         'Debian': {
-            'package': 'nginx-full',
+            'package': 'nginx',
             'service': 'nginx',
             'webuser': 'www-data',
             'conf_file': '/etc/nginx/nginx.conf',

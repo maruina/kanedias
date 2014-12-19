@@ -2,11 +2,13 @@
     'lookup': salt['grains.filter_by']({
         'Debian': {
             'profile_dir': '/etc/profile.d',
-            'gcc': 'gcc'
+            'gcc': 'gcc',
+            'bzip2': 'bzip2'
         },
         'RedHat': {
             'profile_dir': '/etc/profile.d',
-            'gcc': 'gcc'
+            'gcc': 'gcc',
+            'bzip2': 'bzip2'
         },
     }, default='RedHat' )
 }, merge=True) %}
