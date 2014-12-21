@@ -1,4 +1,4 @@
-{% from 'postfix/map.jinja' import postfix with context %}
+{% from 'roundcube/map.jinja' import roundcube with context %}
 
 {% if salt['grains.get']('os_family') == 'RedHat' %}
     {% if salt['grains.get']('os') == 'CentOS' %}
@@ -8,9 +8,8 @@ epel_centos_repo:
     {% endif %}
 {% endif %}
 
-postfix_install:
+roundecube_install:
   pkg.installed:
     - pkgs:
-      - {{ postfix.lookup.package }}
-      - {{ postfix.lookup.mysql }}
-      - {{ postfix.lookup.swaks }}
+      - {{ roundcube.lookup.package }}
+      - {{ roundcube.lookup.plugins }}

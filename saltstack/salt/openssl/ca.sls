@@ -1,6 +1,6 @@
 {% from 'openssl/map.jinja' import openssl with context %}
 
-install_python_openssl:
+python_openssl_install:
   pkg.installed:
     - name: python-openssl
 

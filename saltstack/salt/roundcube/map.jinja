@@ -1,0 +1,11 @@
+{% set roundcube = salt['pillar.get']('roundcube', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'roundcube',
+            'plugins': 'roundcube-plugins'
+        },
+        'RedHat': {
+            'package': 'todo'
+        },
+    }, default='RedHat' )
+}, merge=True) %}

@@ -11,7 +11,7 @@ epel_centos_repo:
 dovecot_install:
   pkg.installed:
     - pkgs:
-      - {{ dovecot.lookup.dovecot_mysql }}
-      - {{ dovecot.lookup.dovecot_pop3 }}
-      - {{ dovecot.lookup.dovecot_imap }}
-      - {{ dovecot.lookup.dovecot_sieve }}
+      - {{ dovecot.lookup.mysql }}
+      - {{ dovecot.lookup.pop3 }}
+      - {{ dovecot.lookup.imap }}
+      - {{ dovecot.lookup.sieve }}
