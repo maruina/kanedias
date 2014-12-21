@@ -1,0 +1,8 @@
+apache:
+  website:
+    webmail:
+      type: ssl
+      server_admin: jon@example.com
+      document_root: /var/www
+      ssl_certificate_file: /etc/ssl/certs/mailserver.pem
+      ssl_certificate_key_file: /etc/ssl/private/mailserver.pem

@@ -10,8 +10,8 @@ python_openssl_install:
 
 {{ generate_self_signed_ca }}:
   module.run:
-    - name: tls.create_ca
-    - ca_name: {{ name }}
+    - name: tls.create_self_signed_cert
+    - tls_dir: {{ name }}
     - bits: {{ parameters['bits'] }}
     - days: {{ parameters['days'] }}
     - CN: {{ parameters['CN'] }}

@@ -1,0 +1,20 @@
+{% set apache = salt['pillar.get']('apache', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'apache2',
+            'service': 'apache2',
+            'webuser': 'www-data',
+            'conf_file': '/etc/apache2/apache2.conf',
+            'sites_available': '/etc/apache2/sites-available',
+            'sites_enabled': '/etc/apache2/sites-enabled',
+            'vhost_use_symlink': True,
+            'apache_utils': 'apache2-utils'
+        },
+        'RedHat': {
+            'package': 'todo'
+        },
+    }, default='RedHat' ),
+    'server': {
+        'example_files': False
+    },
+}, merge=True) %}
