@@ -1,7 +1,7 @@
 apache:
   website:
-    webmail:
-      type: ssl
+    mywebsite:
+      type: webmail
       server_admin: jon@example.com
       document_root: /var/www
       ssl_certificate_directory: /etc/ssl/certs/

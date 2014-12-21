@@ -30,7 +30,7 @@ apache_example_ssl_conf_link:
 {{ apache_conf_id }}:
   file.managed:
     - name: {{ apache.lookup.sites_available }}/{{ name }}.conf
-    {% if parameters['type'] == 'ssl' %}
+    {% if parameters['type'] == 'webmail' %}
     - source: salt://apache/files/default-ssl-{{ salt['grains.get']('os_family') }}
     {% endif %}
     - user: root
@@ -56,7 +56,7 @@ apache_example_ssl_conf_link:
 {{ apache_conf_id }}:
   file.managed:
     - name: {{ apache.lookup.sites_enabled }}/{{ name }}.conf
-    {% if parameters['type'] == 'ssl' %}
+    {% if parameters['type'] == 'webmail' %}
     - source: salt://apache/files/default-ssl-{{ salt['grains.get']('os_family') }}.conf
     {% endif %}
     - user: root
@@ -69,7 +69,7 @@ apache_example_ssl_conf_link:
         parameters: {{ parameters }}
 
     {% endif %}
-    {% if parameters['type'] == 'ssl' %}
+    {% if parameters['type'] == 'webmail' %}
         {% set apache_module_id = 'apache_module_' ~ parameters['type'] %}
 
 {{ apache_module_id }}_conf:
