@@ -1,15 +1,23 @@
 {% from 'apache/map.jinja' import apache with context %}
 
 {% if not apache.server.example_files %}
-    {% if salt['grains.get']('os') == 'CentOS' or salt['grains.get']('os_family') == 'Debian' %}
+    {% if salt['grains.get']('os_family') == 'Debian' %}
 
 apache_default_conf:
   file.absent:
-    - name: {{ apache.lookup.site_available }}/default.conf
+    - name: {{ apache.lookup.sites_available }}/default
+
+apache_default_conf_link:
+  file.absent:
+    - name: {{ apache.lookup.sites_enabled }}/000-default
 
 apache_example_ssl_conf:
   file.absent:
-    - name: {{ apache.lookup.vhost_available }}/default-ssl.conf
+    - name: {{ apache.lookup.sites_available }}/default-ssl
+
+apache_example_ssl_conf_link:
+  file.absent:
+    - name: {{ apache.lookup.sites_enabled }}/default-ssl
 
     {% endif %}
 {% endif %}
@@ -21,9 +29,9 @@ apache_example_ssl_conf:
 
 {{ apache_conf_id }}:
   file.managed:
-    - name: {{ apache.lookup.site_available }}/{{ name }}.conf
+    - name: {{ apache.lookup.sites_available }}/{{ name }}.conf
     {% if parameters['type'] == 'ssl' %}
-    - source: salt://apache/files/default-ssl-{{ salt['grains.get']('os_family') }}.conf
+    - source: salt://apache/files/default-ssl-{{ salt['grains.get']('os_family') }}
     {% endif %}
     - user: root
     - group: root
@@ -34,18 +42,20 @@ apache_example_ssl_conf:
     - context:
         parameters: {{ parameters }}
 
-{{ apache_conf_enable }}
+{{ apache_conf_enable }}:
   file.symlink:
-    - name: {{ apache.lookup.site_enable }}/{{ name }}.conf
-    - target: {{ apache.lookup.site_available }}/{{ name }}.conf
+    - name: {{ apache.lookup.sites_enabled }}/{{ name }}.conf
+    - target: {{ apache.lookup.sites_available }}/{{ name }}.conf
     - force: True
     - makedirs: True
+    - watch_in:
+      - service: apache_service
 
     {% else %}
 
 {{ apache_conf_id }}:
   file.managed:
-    - name: {{ apache.lookup.site_enable }}/{{ name }}.conf
+    - name: {{ apache.lookup.sites_enabled }}/{{ name }}.conf
     {% if parameters['type'] == 'ssl' %}
     - source: salt://apache/files/default-ssl-{{ salt['grains.get']('os_family') }}.conf
     {% endif %}
