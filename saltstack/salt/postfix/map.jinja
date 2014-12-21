@@ -1,7 +1,9 @@
 {% set postfix = salt['pillar.get']('postfix', {
     'lookup': salt['grains.filter_by']({
         'Debian': {
-            'package': 'postfix'
+            'package': 'postfix',
+            'postfix_mysql': 'postfix-mysql',
+            'swaks': 'swaks'
         },
         'RedHat': {
             'package': 'postfix'

@@ -10,4 +10,7 @@ epel_centos_repo:
 
 postfix_install:
   pkg.installed:
-    - name: {{ postfix.lookup.package }}
+    - pkgs:
+      - {{ postfix.lookup.package }}
+      - {{ postfix.lookup.postfix_mysql }}
+      - {{ postfix.lookup.swaks }}
