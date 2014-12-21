@@ -1,8 +1,16 @@
 openssl:
   ca:
-    cert_name:
+    ca_name:
       type: self-signed
       bits: number of RSA key bits, Default is 2048
       days: number of days the CA will be valid, Default is 365
+      CN: common name in the request, Default is localhost
+      C: country, Default is US
+      ST: state, Default is Utah
+      L: locality, Default is Salt Lake City
+      O: organization, Default is SaltStack
+      OU: organizational unit, Default is None
+      emailAddress: email address for the CA owner, Default is xyz@pdq.net
       cacert_path: absolute path to ca certificates root directory
-      CN: mail.example.com
+      digest: The message digest algorithm. Must be a string describing a digest algorithm supported by OpenSSL (by
+      EVP_get_digestbyname, specifically). For example, "md5" or "sha1". Default: 'sha256'

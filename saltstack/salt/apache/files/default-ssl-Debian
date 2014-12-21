@@ -39,8 +39,8 @@
 	#   /usr/share/doc/apache2.2-common/README.Debian.gz for more info.
 	#   If both key and certificate are stored in the same file, only the
 	#   SSLCertificateFile directive is needed.
-	SSLCertificateFile    {{ parameters['ssl_certificate_directory'] }}/certs/{{ salt['grains.get']('id') }}.pem
-	SSLCertificateKeyFile {{ parameters['ssl_certificate_directory'] }}/private/{{ salt['grains.get']('id') }}.pem
+	SSLCertificateFile    {{ parameters['ssl_certificate_directory'] }}/certs/{{ salt['grains.get']('id') }}.crt
+	SSLCertificateKeyFile {{ parameters['ssl_certificate_directory'] }}/certs/{{ salt['grains.get']('id') }}.key
 
 	#   Server Certificate Chain:
 	#   Point SSLCertificateChainFile at a file containing the
