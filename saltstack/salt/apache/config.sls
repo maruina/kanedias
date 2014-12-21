@@ -69,4 +69,26 @@ apache_example_ssl_conf_link:
         parameters: {{ parameters }}
 
     {% endif %}
+    {% if parameters['type'] == 'ssl' %}
+        {% set apache_module_id = 'apache_module_' ~ parameters['type'] %}
+
+{{ apache_module_id }}_conf:
+  file.symlink:
+    - name: {{ apache.lookup.mods_enabled }}/ssl.conf
+    - target: {{ apache.lookup.mods_available }}/ssl.conf
+    - force: True
+    - makedirs: True
+    - watch_in:
+      - service: apache_service
+
+{{ apache_module_id }}_load:
+  file.symlink:
+    - name: {{ apache.lookup.mods_enabled }}/ssl.load
+    - target: {{ apache.lookup.mods_available }}/ssl.load
+    - force: True
+    - makedirs: True
+    - watch_in:
+      - service: apache_service
+
+    {% endif %}
 {% endfor %}

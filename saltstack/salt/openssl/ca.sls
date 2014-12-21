@@ -6,23 +6,12 @@ python_openssl_install:
 
 {% for name, parameters in salt['pillar.get']('openssl:ca').iteritems() %}
     {% if 'self-signed' in parameters['type'] %}
-        {% set generate_self_signed_ca = 'generate_self_signed_' ~ name %}
+        {% set generate_self_signed_cert = 'generate_self_signed_cert_' ~ name %}
 
-{{ generate_self_signed_ca }}:
-  module.run:
-    - name: tls.create_self_signed_cert
-    - tls_dir: {{ name }}
-    - bits: {{ parameters['bits'] }}
-    - days: {{ parameters['days'] }}
-    - CN: {{ parameters['CN'] }}
-    - C: {{ parameters['C'] }}
-    - ST: {{ parameters['ST'] }}
-    - L: {{ parameters['L'] }}
-    - O: {{ parameters['OU'] }}
-    - OU: {{ parameters['OU'] }}
-    - emailAddress: {{ parameters['emailAddress'] }}
-    - cacert_path: {{ parameters['cacert_path'] }}
-    - digest: {{ parameters['digest'] }}
+{{ generate_self_signed_cert }}:
+  cmd.run:
+    - name: openssl req -new -x509 -days {{ parameters['days'] }} -nodes -newkey rsa:{{ parameters['bits'] }} -out {{ parameters['cacert_path'] }}/{{ name }}/certs/{{ parameters['CN'] }}.pem -keyout {{ parameters['cacert_path'] }}/{{ name }}/private/{{ parameters['CN'] }}.pem
+    - unless: test -d {{ parameters['cacert_path'] }}/{{ name }}
 
     {% endif %}
 {% endfor %}
