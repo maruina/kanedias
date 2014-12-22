@@ -1,5 +1,8 @@
 {% from 'dovecot/map.jinja' import dovecot with context %}
 
+include:
+  - dovecot.user
+
 dovecot_10_auth:
   file.managed:
     - name: {{ dovecot.lookup.confd_dir }}/10-auth.conf
@@ -62,9 +65,11 @@ dovecot_sql_conf:
 
 dovecot_conf:
   file.managed:
-    - name: {{ dovecot.lookup.conf_dir }}/dovecot
+    - name: {{ dovecot.lookup.conf_dir }}/dovecot.conf
     - user: {{ salt['pillar.get']('dovecot:vmail_user') }}
     - group: {{ salt['pillar.get']('dovecot:vmail_group') }}
     - mode: 622
     - watch_in:
       - service: dovecot_service
+    - require:
+      - sls: dovecot.user
