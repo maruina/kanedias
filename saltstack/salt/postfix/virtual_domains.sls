@@ -32,7 +32,7 @@ virtual_domains_create_table:
 {{ add_domain }}:
   mysql_query.run:
     - database: {{ salt['pillar.get']('postfix:db:database') }}
-    - query: "INSERT INTO `{{ salt['pillar.get']('postfix:db:database') }}`.`virtual_domains` (`name`) VALUES ('{{ domain }}');"
+    - query: "INSERT IGNORE INTO `{{ salt['pillar.get']('postfix:db:database') }}`.`virtual_domains` (`name`) VALUES ('{{ domain }}');"
     - connection_host: {{ salt['pillar.get']('postfix:db:host') }}
     - connection_user: {{ salt['pillar.get']('postfix:db:user') }}
     - connection_pass: {{ salt['pillar.get']('postfix:db:password') }}

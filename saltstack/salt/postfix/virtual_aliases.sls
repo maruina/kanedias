@@ -32,7 +32,7 @@ virtual_aliases_create_table:
 {{ add_alias }}:
   mysql_query.run:
     - database: {{ salt['pillar.get']('postfix:db:database') }}
-    - query: "INSERT INTO `mailserver`.`virtual_aliases` (`domain_id`, `source`, `destination`) SELECT id, '{{ alias[1] }}', '{{ alias[2] }}' FROM `mailserver`.`virtual_domains` where name='{{ alias[0] }}';"
+    - query: "INSERT IGNORE INTO `mailserver`.`virtual_aliases` (`domain_id`, `source`, `destination`) SELECT id, '{{ alias[1] }}', '{{ alias[2] }}' FROM `mailserver`.`virtual_domains` where name='{{ alias[0] }}';"
     - connection_host: {{ salt['pillar.get']('postfix:db:host') }}
     - connection_user: {{ salt['pillar.get']('postfix:db:user') }}
     - connection_pass: {{ salt['pillar.get']('postfix:db:password') }}
