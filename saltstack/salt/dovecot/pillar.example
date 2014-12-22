@@ -2,6 +2,11 @@ dovecot:
   vmail_user: vmail
   vmail_group: vmail
   vmail_dir: /path/to/mail/storage
+  db:
+    user: dbuser
+    password: dbpass
+    database: dbmail
+    host: dbhost
   # Set disable_plaintext_auth = yes in 10-auth.conf
   ssl_only: true
   # Path to the certificate directory

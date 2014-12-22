@@ -49,3 +49,22 @@ dovecot_15_lda:
     - mode: 622
     - replace: True
     - template: jinja
+
+dovecot_sql_conf:
+  file.managed:
+    - name: {{ dovecot.lookup.conf_dir }}/dovecot-sql.conf.ext
+    - source: salt://dovecot/files/dovecot-sql.conf.ext
+    - user: root
+    - group: root
+    - mode: 622
+    - replace: True
+    - template: jinja
+
+dovecot_conf:
+  file.managed:
+    - name: {{ dovecot.lookup.conf_dir }}/dovecot
+    - user: {{ salt['pillar.get']('dovecot:vmail_user') }}
+    - group: {{ salt['pillar.get']('dovecot:vmail_group') }}
+    - mode: 622
+    - watch_in:
+      -
