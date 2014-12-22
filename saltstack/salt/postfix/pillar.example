@@ -2,6 +2,7 @@ postfix:
   vmail_user: vmail
   vmail_group: vmail
   ssl_dir: /etc/ssl/archon_mta
+  fqdn: mail.example.com
   db:
     user: mailuser
     password: gfdc8998dsf89

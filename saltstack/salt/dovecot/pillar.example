@@ -2,6 +2,7 @@ dovecot:
   vmail_user: vmail
   vmail_group: vmail
   vmail_dir: /path/to/mail/storage
+  fqdn: mail.example.com
   db:
     user: dbuser
     password: dbpass

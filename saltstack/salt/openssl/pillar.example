@@ -4,7 +4,7 @@ openssl:
       type: self-signed
       bits: number of RSA key bits, Default is 2048
       days: number of days the CA will be valid, Default is 365
-      CN: common name in the request, Default is localhost
+      CN: mail.example.com common name in the request, Default is localhost
       C: country, Default is US
       ST: state, Default is Utah
       L: locality, Default is Salt Lake City
