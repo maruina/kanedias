@@ -1,0 +1,4 @@
+dovecot:
+  vmail_dir: /path/to/mail/storage
+  ssl_only: true
+  db_backend: mysql
