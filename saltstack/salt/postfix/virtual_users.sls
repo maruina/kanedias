@@ -26,13 +26,13 @@ virtual_users_create_table:
       - sls: mysql.database
       - sls: mysql.user
 
-{% for user, parameters in salt['pillar.get']('postfix:user').iteritems() %}
-    {% set add_user = 'add_user_' ~ user %}
+{% for user in salt['pillar.get']('postfix:user') %}
+    {% set add_user = 'add_user_' ~ loop.index0 %}
 
 {{ add_user }}:
   mysql_query.run:
     - database: {{ salt['pillar.get']('postfix:db:database') }}
-    - query: "INSERT IGNORE INTO `mailserver`.`virtual_users` (`domain_id`, `password`, `email`) SELECT id, MD5( '{{ parameters['password'] }}' ), '{{ user }}@{{ parameters['domain'] }}' FROM `mailserver`.`virtual_domains` where name='{{ parameters['domain'] }}';"
+    - query: "INSERT IGNORE INTO `mailserver`.`virtual_users` (`domain_id`, `password`, `email`) SELECT id, MD5( '{{ user[2] }}' ), '{{ user[1] }}@{{ user[0] }}' FROM `mailserver`.`virtual_domains` where name='{{ user[0] }}';"
     - connection_host: {{ salt['pillar.get']('postfix:db:host') }}
     - connection_user: {{ salt['pillar.get']('postfix:db:user') }}
     - connection_pass: {{ salt['pillar.get']('postfix:db:password') }}
