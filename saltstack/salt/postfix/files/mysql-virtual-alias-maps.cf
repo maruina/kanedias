@@ -1,0 +1,10 @@
+user = {{ salt['pillar.get']('postfix:db:user') }}
+password = {{ salt['pillar.get']('postfix:db:password') }}
+{# Note: You may be tempted to write "localhost" instead of "127.0.0.1". Don't do that because there is indeed a difference in this context. "localhost" will make Postfix look for the MySQL socket file and it can't find it within it's chroot jail at /var/spool/postfix because it is at /var/run/mysqld/mysqld.sock by default. But if you tell Postfix to use 127.0.0.1 as described here you make Postfix use a TCP connection to port 3306 on localhost which is working even if Postfix is jailed. #}
+{% if 'localhost' in salt['pillar.get']('postfix:db:host') %}
+hosts = 127.0.0.1
+{% else %}
+hosts = {{ salt['pillar.get']('postfix:db:host') }}
+{% endif %}
+dbname = {{ salt['pillar.get']('postfix:db:database') }}
+query = SELECT destination FROM virtual_aliases WHERE source='%s'
