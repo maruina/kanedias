@@ -4,4 +4,6 @@ dovecot:
   vmail_dir: /path/to/mail/storage
   # Set disable_plaintext_auth = yes in 10-auth.conf
   ssl_only: true
+  # Path to the certificate directory
+  ssl_dir: /etc/ssl/archon_mta
   db_backend: mysql
