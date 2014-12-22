@@ -5,7 +5,7 @@ include:
 
 postfix_service:
   service.running:
-    - name: {{ apache.lookup.service }}
+    - name: {{ postfix.lookup.service }}
     - enable: True
     - reload: True
     - require:
