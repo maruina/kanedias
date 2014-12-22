@@ -37,4 +37,4 @@ mysql_virtual_alias_maps_conf:
 
 mysql_virtual_alias_maps_conf_add:
   cmd.run:
-    - name: postconf -e virtual_mailbox_maps=mysql:{{ postfix.lookup.conf_dir }}/mysql-virtual-alias-maps.cf
+    - name: postconf -e virtual_alias_maps=mysql:{{ postfix.lookup.conf_dir }}/mysql-virtual-alias-maps.cf
