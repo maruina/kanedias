@@ -1,4 +1,7 @@
 dovecot:
+  vmail_user: vmail
+  vmail_group: vmail
   vmail_dir: /path/to/mail/storage
+  # Set disable_plaintext_auth = yes in 10-auth.conf
   ssl_only: true
   db_backend: mysql

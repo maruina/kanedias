@@ -30,3 +30,12 @@ dovecot_10_mail:
     - replace: True
     - template: jinja
 
+dovecot_10_master:
+  file.managed:
+    - name: {{ dovecot.lookup.confd_dir }}/10-master.conf
+    - source: salt://dovecot/files/10-master.conf
+    - user: root
+    - group: root
+    - mode: 622
+    - replace: True
+    - template: jinja
