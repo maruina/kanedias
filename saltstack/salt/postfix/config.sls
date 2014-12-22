@@ -57,3 +57,11 @@ postfix_virtual_transport:
 postfix_dovecot_destination_recipient_limit:
   cmd.run:
     - name: postconf -e dovecot_destination_recipient_limit=1
+
+postfix_smtp_authentication:
+  cmd.script:
+    - name: smtp_authentication.sh
+    - source: salt://postfix/files/smtp_authentication.sh
+    - user: root
+    - group: root
+    - template: jinja

@@ -9,7 +9,7 @@ dovecot_10_auth:
     - source: salt://dovecot/files/10-auth.conf
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - replace: True
     - template: jinja
 
@@ -19,7 +19,7 @@ dovecot_auth_sql:
     - source: salt://dovecot/files/auth-sql.conf.ext
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - replace: True
     - template: jinja
 
@@ -29,7 +29,7 @@ dovecot_10_mail:
     - source: salt://dovecot/files/10-mail.conf
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - replace: True
     - template: jinja
 
@@ -39,7 +39,7 @@ dovecot_10_master:
     - source: salt://dovecot/files/10-master.conf
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - replace: True
     - template: jinja
 
@@ -49,7 +49,7 @@ dovecot_15_lda:
     - source: salt://dovecot/files/15-lda.conf
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - replace: True
     - template: jinja
 
@@ -59,16 +59,16 @@ dovecot_sql_conf:
     - source: salt://dovecot/files/dovecot-sql.conf.ext
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - replace: True
     - template: jinja
 
 dovecot_conf:
   file.managed:
     - name: {{ dovecot.lookup.conf_dir }}/dovecot.conf
-    - user: {{ salt['pillar.get']('dovecot:vmail_user') }}
-    - group: {{ salt['pillar.get']('dovecot:vmail_group') }}
-    - mode: 622
+    - user: root
+    - group: root
+    - mode: 644
     - watch_in:
       - service: dovecot_service
     - require:
