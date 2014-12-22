@@ -15,7 +15,5 @@ postfix:
       domain: example.com
       password: test2
   alias:
-    joe:
-      joe@example.org: joe@gmail.com
-    bill:
-      bill@example.com: bill@yahoo.com
+      - [example.org, joe@example.org, joe@gmail.com]
+      - [example.com, bill@example.com, bill@yahoo.com]
