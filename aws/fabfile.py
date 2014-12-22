@@ -337,7 +337,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_nam
             instance_security_group.authorize(ip_protocol='tcp', from_port=80, to_port=80, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=443, to_port=443, cidr_ip='0.0.0.0/0')
         if 'MTA' in instance_tag.upper():
-            instance_security_group.authorize(ip_protocol='tpc', from_port=587, to_port=587, cidr_ip='0.0.0.0/0')
+            instance_security_group.authorize(ip_protocol='tcp', from_port=587, to_port=587, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=993, to_port=993, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=995, to_port=995, cidr_ip='0.0.0.0/0')
         print('Security group {} [{}] created'.format(instance_security_group.id))
@@ -411,7 +411,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_nam
         result.update()
 
     instance_ssh_user = find_ssh_user(instance_id=instance.id, ec2_conn=ec2_conn)
-    instance_ssh_key = DEFAULT_SSH_DIR + instance.key_name + '.pem'
+    instance_ssh_key = os.path.join(DEFAULT_SSH_DIR, instance.key_name + '.pem')
 
     # Find the NAT parameters
     nat_instance = find_subnet_nat_instance(subnet_id=instance.subnet_id, ec2_conn=ec2_conn, vpc_conn=vpc_conn)
