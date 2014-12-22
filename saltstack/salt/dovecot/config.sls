@@ -67,4 +67,4 @@ dovecot_conf:
     - group: {{ salt['pillar.get']('dovecot:vmail_group') }}
     - mode: 622
     - watch_in:
-      -
+      - service: dovecot_service

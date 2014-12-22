@@ -1,6 +1,7 @@
 {% set dovecot = salt['pillar.get']('dovecot', {
     'lookup': salt['grains.filter_by']({
         'Debian': {
+            'service': 'dovecot',
             'mysql': 'dovecot-mysql',
             'pop3': 'dovecot-pop3d',
             'imap': 'dovecot-imapd',
