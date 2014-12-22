@@ -39,3 +39,13 @@ dovecot_10_master:
     - mode: 622
     - replace: True
     - template: jinja
+
+dovecot_15_lda:
+  file.managed:
+    - name: {{ dovecot.lookup.confd_dir }}/15-lda.conf
+    - source: salt://dovecot/files/15-lda.conf
+    - user: root
+    - group: root
+    - mode: 622
+    - replace: True
+    - template: jinja
