@@ -1,3 +1,21 @@
 postfix:
-  ca: /path/to/ca/files
-  mydomain: example.com
+  db:
+    user: mailuser
+    password: gfdc8998dsf89
+    database: mailserver
+    host: localhost
+  domain:
+    - example.com
+    - example.org
+  user:
+    joe:
+      domain: example.org
+      password: test1
+    bill:
+      domain: example.com
+      password: test2
+  alias:
+    joe:
+      joe@example.org: joe@gmail.com
+    bill:
+      bill@example.com: bill@yahoo.com
