@@ -5,8 +5,8 @@ postconf -e smtpd_sasl_path=private/auth
 postconf -e smtpd_sasl_auth_enable=yes
 postconf -e smtpd_tls_security_level=may
 postconf -e smtpd_tls_auth_only=yes
-postconf -e smtpd_tls_cert_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['grains.get']('id') }}.crt
-postconf -e smtpd_tls_key_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['grains.get']('id') }}.key
+postconf -e smtpd_tls_cert_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['pillar.get']('postfix:fqdn') }}.crt
+postconf -e smtpd_tls_key_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['pillar.get']('postfix:fqdn') }}.key
 
 postconf -e smtpd_helo_required=yes
 postconf -e smtpd_recipient_restrictions=" \
