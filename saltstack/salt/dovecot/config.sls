@@ -20,3 +20,13 @@ dovecot_auth_sql:
     - replace: True
     - template: jinja
 
+dovecot_10_mail:
+  file.managed:
+    - name: {{ dovecot.lookup.confd_dir }}/10-mail.conf
+    - source: salt://dovecot/files/10-mail.conf
+    - user: root
+    - group: root
+    - mode: 622
+    - replace: True
+    - template: jinja
+
