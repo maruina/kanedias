@@ -1,4 +1,6 @@
 postfix:
+  vmail_user: vmail
+  vmail_group: vmail
   db:
     user: mailuser
     password: gfdc8998dsf89
