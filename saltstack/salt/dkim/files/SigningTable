@@ -1,0 +1,3 @@
+{% for sign_table in salt['pillar.get']('dkim:signing_table') %}
+{{ sign_table[0] }} {{ sign_table[1] }}
+{% endfor %}

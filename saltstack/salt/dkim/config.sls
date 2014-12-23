@@ -13,10 +13,11 @@ dkim_create_conf_dir:
 
 dkim_create_keys_dir:
   file.directory:
-    - name: {{ dkim.lookup.keys_dir }}
-    - user: root
-    - group: root
+    - name: {{ dkim.lookup.keys_dir }}/{{ salt['pillar.get']('dkim:domain') }}
+    - user: {{ dkim.lookup.user }}
+    - group: {{ dkim.lookup.group }}
     - dir_mode: 644
+    - makedirs: True
     - recurse:
         - user
         - group
@@ -51,3 +52,41 @@ dkim_postfix_conf:
     - user: root
     - group: root
     - template: jinja
+
+dkim_trusted_host:
+  file.managed:
+    - name: {{ dkim.lookup.conf_dir }}/TrustedHosts
+    - source: salt://dkim/files/TrustedHosts
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - watch_in:
+      - service: dkim_service
+
+dkim_key_table:
+  file.managed:
+    - name: {{ dkim.lookup.conf_dir }}/KeyTable
+    - source: salt://dkim/files/KeyTable
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - watch_in:
+      - service: dkim_service
+
+dkim_signing_table:
+  file.managed:
+    - name: {{ dkim.lookup.conf_dir }}/SigningTable
+    - source: salt://dkim/files/SigningTable
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - watch_in:
+      - service: dkim_service
+
+dkim_create_keys:
+  cmd.run:
+    - name: opendkim-genkey -s {{ salt['pillar.get']('dkim:selector') }} -d {{ salt['pillar.get']('dkim:domain') }}
+    - unless: test -f {{ dkim.lookup.keys_dir }}/{{ salt['pillar.get']('dkim:domain') }}/{{ salt['pillar.get']('dkim:selector') }}.private

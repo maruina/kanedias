@@ -1,0 +1,6 @@
+127.0.0.1
+localhost
+
+{% for host in salt['pillar.get']('dkim:trusted_hosts') %}
+{{ host }}
+{% endfor %}

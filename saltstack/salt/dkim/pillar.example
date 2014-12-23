@@ -1,4 +1,7 @@
 dkim:
+  fqdn: mail.example.com
+  selector: mail
+  domain: example.com
   socket:
     # TCP configuration
     type: tcp
@@ -7,3 +10,11 @@ dkim:
     # Unix socket configuration
     type: unix
     file: /var/run/opendkim/opendkim.sock
+  trusted_hosts:
+    - *.example.org
+    - *.anotherdomain.org
+  key_table:
+    - [dnsrecord, domain, /path/to/keydir]
+    - [mail, example.com, /etc/ssl/example.com/]
+  signing_table:
+    - [*@example.com, mail._domainkey.example.com]
