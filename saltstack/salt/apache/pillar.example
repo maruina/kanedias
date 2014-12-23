@@ -1,6 +1,7 @@
 apache:
   website:
     mywebsite:
+      fqdn: mail.example.com
       type: webmail
       server_admin: jon@example.com
       document_root: /var/www
