@@ -10,6 +10,6 @@
 #SOCKET="inet:12345@192.0.2.1" # listen on 192.0.2.1 on port 12345
 {% if 'tcp' in salt['pillar.get']('dkim:socket:type') %}
 SOCKET="inet:{{ salt['pillar.get']('dkim:socket:port') }}@{{ salt['pillar.get']('dkim:socket:host') }}"
-{% elif 'unix' in salt['pillar.get']('dkim:socket:type')
+{% elif 'unix' in salt['pillar.get']('dkim:socket:type') %}
 SOCKET="local:{{ salt['pillar.get']('dkim:socket:file') }}"
 {% endif %}

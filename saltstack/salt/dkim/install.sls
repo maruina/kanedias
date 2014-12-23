@@ -2,4 +2,6 @@
 
 dkim_install:
   pkg.installed:
-    - name: {{ dkim.lookup.package }}
+    - pkgs:
+      - {{ dkim.lookup.package }}
+      - {{ dkim.lookup.tools }}

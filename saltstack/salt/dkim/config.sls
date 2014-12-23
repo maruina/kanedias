@@ -1,5 +1,8 @@
 {% from 'dkim/map.jinja' import dkim with context %}
 
+include:
+  - dkim.install
+
 dkim_create_conf_dir:
   file.directory:
     - name: {{ dkim.lookup.conf_dir }}
@@ -33,6 +36,9 @@ dkim_conf:
     - template: jinja
     - watch_in:
       - service: dkim_service
+    - require:
+      - file: dkim_create_conf_dir
+
 
 dkim_socket_conf:
   file.managed:
@@ -44,6 +50,8 @@ dkim_socket_conf:
     - template: jinja
     - watch_in:
       - service: dkim_service
+    - require:
+      - file: dkim_create_conf_dir
 
 dkim_postfix_conf:
   cmd.script:
@@ -63,6 +71,8 @@ dkim_trusted_host:
     - template: jinja
     - watch_in:
       - service: dkim_service
+    - require:
+      - file: dkim_create_conf_dir
 
 dkim_key_table:
   file.managed:
@@ -74,6 +84,8 @@ dkim_key_table:
     - template: jinja
     - watch_in:
       - service: dkim_service
+    - require:
+      - file: dkim_create_conf_dir
 
 dkim_signing_table:
   file.managed:
@@ -85,8 +97,16 @@ dkim_signing_table:
     - template: jinja
     - watch_in:
       - service: dkim_service
+    - require:
+      - file: dkim_create_conf_dir
 
 dkim_create_keys:
   cmd.run:
     - name: opendkim-genkey -s {{ salt['pillar.get']('dkim:selector') }} -d {{ salt['pillar.get']('dkim:domain') }}
     - unless: test -f {{ dkim.lookup.keys_dir }}/{{ salt['pillar.get']('dkim:domain') }}/{{ salt['pillar.get']('dkim:selector') }}.private
+    - cwd: {{ dkim.lookup.keys_dir }}/{{ salt['pillar.get']('dkim:domain') }}
+    - watch_in:
+      - service: dkim_service
+    - require:
+      - file: dkim_create_keys_dir
+      - sls: dkim.install
