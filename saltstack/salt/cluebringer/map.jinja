@@ -1,0 +1,17 @@
+{% set cluebringer = salt['pillar.get']('cluebringer', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'postfix-cluebringer',
+            'service': 'postfix-cluebringer',
+            'user': 'cluebringer',
+            'group': 'cluebringer',
+            'mysql': 'postfix-cluebringer-mysql',
+            'conf_dir': '/etc/cluebringer',
+            'conf_file': '/etc/cluebringer/cluebringer.conf',
+            'web_file': '/etc/cluebringer/cluebringer-webui.conf'
+        },
+        'RedHat': {
+            'package': 'todo'
+        },
+    }, default='RedHat' )
+}, merge=True) %}
