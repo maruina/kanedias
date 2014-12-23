@@ -1,0 +1,15 @@
+{% set dkim = salt['pillar.get']('dkim', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'opendkim',
+            'service': 'opendkim',
+            'conf_dir': '/etc/opendkim',
+            'conf_file': '/etc/opendkim/opendkim.conf',
+            'keys_dir': '/etc/opendkim/keys',
+            'socket_file': '/etc/default/opendkim'
+        },
+        'RedHat': {
+            'package': 'todo'
+        },
+    }, default='RedHat' )
+}, merge=True) %}

@@ -1,0 +1,9 @@
+dkim:
+  socket:
+    # TCP configuration
+    type: tcp
+    port: 12301
+    host: localhost
+    # Unix socket configuration
+    type: unix
+    file: /var/run/opendkim/opendkim.sock

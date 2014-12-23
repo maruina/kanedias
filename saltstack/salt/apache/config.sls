@@ -38,7 +38,7 @@ apache_example_ssl_conf_link:
     {% endif %}
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - template: jinja
     - watch_in:
       - service: apache_service
@@ -62,7 +62,7 @@ apache_example_ssl_conf_link:
     {% endif %}
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - template: jinja
     - watch_in:
       - service: apache_service
@@ -88,7 +88,7 @@ apache_example_ssl_conf_link:
     {% endif %}
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - template: jinja
     - watch_in:
       - service: apache_service
@@ -103,7 +103,7 @@ apache_example_ssl_conf_link:
     {% endif %}
     - user: root
     - group: root
-    - mode: 622
+    - mode: 644
     - template: jinja
     - watch_in:
       - service: apache_service
