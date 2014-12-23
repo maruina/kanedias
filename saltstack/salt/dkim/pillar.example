@@ -11,10 +11,10 @@ dkim:
     type: unix
     file: /var/run/opendkim/opendkim.sock
   trusted_hosts:
-    - *.example.org
-    - *.anotherdomain.org
+    - "*.example.org"
+    - "*.anotherdomain.org"
   key_table:
     - [dnsrecord, domain, /path/to/keydir]
     - [mail, example.com, /etc/ssl/example.com/]
   signing_table:
-    - [*@example.com, mail._domainkey.example.com]
+    - ["*@example.com", mail._domainkey.example.com]

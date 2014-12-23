@@ -1,0 +1,22 @@
+sqlgrey:
+  postfix_main: /etc/postfix/main.cf
+  socket:
+    # ONLY 1 SOCKET CONFIGURATION ALLOWED
+    # TCP configuration
+    type: tcp
+    port: 2501
+    host: localhost
+    # Unix socket configuration
+    type: unix
+    file: /var/run/opendkim/opendkim.sock
+  db:
+    user: greyuser
+    password: greypass
+    database: greydb
+    host: greydbhost
+  pidfile: /var/run/sqlgrey.pid
+  loglevel: 2
+  reconnect_delay: 5
+  max_connect_age: 24
+  connect_src_throttle: 0
+  greymethod: smart

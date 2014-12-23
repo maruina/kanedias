@@ -1,0 +1,15 @@
+{% set sqlgrey = salt['pillar.get']('sqlgrey', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'package': 'sqlgrey',
+            'user': 'sqlgrey',
+            'group': 'sqlgrey',
+            'service': 'sqlgrey',
+            'conf_dir': '/etc/sqlgrey',
+            'conf_file': '/etc/sqlgrey/sqlgrey.conf'
+        },
+        'RedHat': {
+            'package': 'todo'
+        },
+    }, default='RedHat' )
+}, merge=True) %}
