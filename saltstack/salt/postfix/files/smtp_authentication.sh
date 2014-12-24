@@ -10,12 +10,17 @@ postconf -e smtpd_tls_key_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs
 
 postconf -e smtpd_helo_required=yes
 postconf -e smtpd_recipient_restrictions=" \
-permit_mynetworks, \
-reject_unauth_destination, \
-reject_non_fqdn_recipient, \
-reject_unlisted_recipien,t \
+reject_unknown_sender_domain, \
 reject_unknown_recipient_domain, \
-reject_unauth_destination"
+reject_non_fqdn_recipient, \
+reject_non_fqdn_sender, \
+reject_unlisted_recipient, \
+reject_unauth_destination, \
+{% if salt['pillar.get']('postfix:plugins:cluebringer') -%}
+check_policy_service {{ salt['pillar.get']('postfix:plugins:cluebringer') }}, \
+{%- endif %}
+permit_mynetworks, \
+permit_sasl_authenticated"
 postconf -e smtpd_sender_restrictions=" \
 permit_mynetworks, \
 reject_non_fqdn_sender, \
@@ -31,3 +36,7 @@ reject_unauth_pipelining, \
 reject_rbl_client cbl.abuseat.org, \
 reject_rbl_client bl.spamcop.net, \
 reject_rbl_client zen.spamhaus.org"
+
+{% if salt['pillar.get']('postfix:plugins:cluebringer') -%}
+postconf -e smtpd_end_of_data_restrictions="{{ salt['pillar.get']('postfix:plugins:cluebringer') }}"
+{%- endif %}

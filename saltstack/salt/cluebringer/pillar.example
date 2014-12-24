@@ -1,0 +1,10 @@
+cluebringer:
+  protocols:
+    - Postfix
+  db:
+    type: mysql
+    user: dbuser
+    password: dbpass
+    database: dbmail
+    host: dbhost
+  bypass_mode: pass

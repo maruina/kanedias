@@ -17,3 +17,6 @@ postfix:
   alias:
     - [example.org, joe@example.org, joe@gmail.com]
     - [example.com, bill@example.com, bill@yahoo.com]
+  plugins:
+    dkim: True
+    cluebringer: inet:127.0.0.1:10031
