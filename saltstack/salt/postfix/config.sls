@@ -39,7 +39,15 @@ mysql_virtual_alias_maps_conf_add:
   cmd.run:
     - name: postconf -e virtual_alias_maps=mysql:{{ postfix.lookup.conf_dir }}/mysql-virtual-alias-maps.cf
 
-postfix_conf:
+postfix_main_conf:
+  cmd.script:
+    - name: main_conf.sh
+    - source: salt://postfix/files/main_conf.sh
+    - user: root
+    - group: root
+    - template: jinja
+
+postfix_master_conf:
   file.managed:
     - name: {{ postfix.lookup.conf_dir }}/master.cf
     - source: salt://postfix/files/master.cf
