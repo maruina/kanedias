@@ -340,6 +340,8 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_nam
             instance_security_group.authorize(ip_protocol='tcp', from_port=587, to_port=587, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=993, to_port=993, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=995, to_port=995, cidr_ip='0.0.0.0/0')
+            instance_security_group.authorize(ip_protocol='tcp', from_port=25, to_port=25, cidr_ip='0.0.0.0/0')
+            instance_security_group.authorize(ip_protocol='tcp', from_port=443, to_port=443, cidr_ip='0.0.0.0/0')
         print('Security group {} [{}] created'.format(instance_security_group.id))
     else:
         # Use the secuirty group
