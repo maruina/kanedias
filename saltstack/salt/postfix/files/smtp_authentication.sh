@@ -8,6 +8,10 @@ postconf -e smtpd_tls_auth_only=yes
 postconf -e smtpd_tls_cert_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['pillar.get']('postfix:fqdn') }}.crt
 postconf -e smtpd_tls_key_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['pillar.get']('postfix:fqdn') }}.key
 
+postconf -e proxy_read_maps="\
+proxy:hash:/etc/postfix/helo_access,\
+proxy:unix:passwd.byname"
+
 postconf -e broken_sasl_auth_clients=yes
 postconf -e smtpd_sasl_security_options=noanonymous
 postconf -e smtpd_sasl_authenticated_header=no

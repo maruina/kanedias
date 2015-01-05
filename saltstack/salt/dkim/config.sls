@@ -65,8 +65,8 @@ dkim_trusted_host:
   file.managed:
     - name: {{ dkim.lookup.conf_dir }}/TrustedHosts
     - source: salt://dkim/files/TrustedHosts
-    - user: root
-    - group: root
+    - user: {{ dkim.lookup.user }}
+    - group: {{ dkim.lookup.group }}
     - mode: 644
     - template: jinja
     - watch_in:
@@ -78,8 +78,8 @@ dkim_key_table:
   file.managed:
     - name: {{ dkim.lookup.conf_dir }}/KeyTable
     - source: salt://dkim/files/KeyTable
-    - user: root
-    - group: root
+    - user: {{ dkim.lookup.user }}
+    - group: {{ dkim.lookup.group }}
     - mode: 644
     - template: jinja
     - watch_in:
@@ -91,8 +91,8 @@ dkim_signing_table:
   file.managed:
     - name: {{ dkim.lookup.conf_dir }}/SigningTable
     - source: salt://dkim/files/SigningTable
-    - user: root
-    - group: root
+    - user: {{ dkim.lookup.user }}
+    - group: {{ dkim.lookup.group }}
     - mode: 644
     - template: jinja
     - watch_in:

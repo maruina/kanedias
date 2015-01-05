@@ -1,0 +1,7 @@
+### helo access
+### check_helo_access hash:/etc/postfix/helo_access
+
+localhost             REJECT 554 BadSender1
+127.0.0.1             REJECT 554 BadSender2
+{{ salt['pillar.get']('postfix:fqdn') }}         REJECT 554 BadSender3
+{{ salt['pillar.get']('postfix:public_ip') }}         REJECT 554 BadSender3

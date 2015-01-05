@@ -47,6 +47,26 @@ postfix_main_conf:
     - group: root
     - template: jinja
 
+postfix_helo_access_conf:
+  file.managed:
+    - name: {{ postfix.lookup.conf_dir }}/helo_access
+    - source: salt://postfix/files/helo_access
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+
+postfix_helo_access:
+  cmd.run:
+    - name: postmap {{ postfix.lookup.conf_dir }}/helo_access
+
+postfix_helo_access_db:
+  file.managed:
+    - name: {{ postfix.lookup.conf_dir }}/helo_access.db
+    - user: root
+    - group: root
+    - mode: 644
+
 postfix_master_conf:
   file.managed:
     - name: {{ postfix.lookup.conf_dir }}/master.cf
