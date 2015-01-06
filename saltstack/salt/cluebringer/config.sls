@@ -2,7 +2,7 @@
 
 cluebringer_mysql_conf:
   cmd.run:
-    - name: zcat /usr/share/doc/postfix-cluebringer/database/policyd-db.mysql.gz | sed -e 's/TYPE=InnoDB/ENGINE=InnoDB/' | mysql --user={{ salt['pillar.get']('cluebringer:db:user') }} --password={{ salt['pillar.get']('cluebringer:db:password') }} {{ salt['pillar.get']('cluebringer:db:database') }} && touch {{ cluebringer.lookup.conf_dir }}/mysql_db.installed
+    - name: zcat /usr/share/doc/postfix-cluebringer/database/policyd-db.mysql.gz | perl -pi -e 's#TYPE=#ENGINE=#g' | mysql --user={{ salt['pillar.get']('cluebringer:db:user') }} --password={{ salt['pillar.get']('cluebringer:db:password') }} {{ salt['pillar.get']('cluebringer:db:database') }} && touch {{ cluebringer.lookup.conf_dir }}/mysql_db.installed
     - unless: test -f {{ cluebringer.lookup.conf_dir }}/mysql_db.installed
 
 cluebringer_conf:

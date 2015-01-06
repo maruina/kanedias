@@ -3,5 +3,5 @@
 
 localhost             REJECT 554 BadSender1
 127.0.0.1             REJECT 554 BadSender2
-{{ salt['pillar.get']('postfix:fqdn') }}         REJECT 554 BadSender3
+{{ salt['pillar.get']('postfix:host') }}         REJECT 554 BadSender3
 {{ salt['pillar.get']('postfix:public_ip') }}         REJECT 554 BadSender3

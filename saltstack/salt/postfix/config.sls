@@ -39,6 +39,19 @@ mysql_virtual_alias_maps_conf_add:
   cmd.run:
     - name: postconf -e virtual_alias_maps=mysql:{{ postfix.lookup.conf_dir }}/mysql-virtual-alias-maps.cf
 
+mysql_virtual_sender_maps_conf:
+  file.managed:
+    - name: {{ postfix.lookup.conf_dir }}/mysql-virtual-sender-maps.cf
+    - source: salt://postfix/files/mysql-virtual-sender-maps.cf
+    - user: root
+    - group: root
+    - mode: 622
+    - template: jinja
+
+mysql_virtual_sender_maps_conf_add:
+  cmd.run:
+    - name: postconf -e smtpd_sender_login_maps=mysql:{{ postfix.lookup.conf_dir }}/mysql-virtual-sender-maps.cf
+
 postfix_main_conf:
   cmd.script:
     - name: main_conf.sh
@@ -77,14 +90,6 @@ postfix_master_conf:
     - template: jinja
     - watch_in:
       - service: postfix_service
-
-postfix_virtual_transport:
-  cmd.run:
-    - name: postconf -e virtual_transport=dovecot
-
-postfix_dovecot_destination_recipient_limit:
-  cmd.run:
-    - name: postconf -e dovecot_destination_recipient_limit=1
 
 postfix_smtp_authentication:
   cmd.script:

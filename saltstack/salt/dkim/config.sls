@@ -6,9 +6,9 @@ include:
 dkim_create_conf_dir:
   file.directory:
     - name: {{ dkim.lookup.conf_dir }}
-    - user: root
-    - group: root
-    - dir_mode: 644
+    - user: {{ dkim.lookup.user }}
+    - group: {{ dkim.lookup.group }}
+    - dir_mode: 744
     - recurse:
         - user
         - group
@@ -19,7 +19,7 @@ dkim_create_keys_dir:
     - name: {{ dkim.lookup.keys_dir }}/{{ salt['pillar.get']('dkim:domain') }}
     - user: {{ dkim.lookup.user }}
     - group: {{ dkim.lookup.group }}
-    - dir_mode: 644
+    - dir_mode: 700
     - makedirs: True
     - recurse:
         - user
@@ -67,7 +67,7 @@ dkim_trusted_host:
     - source: salt://dkim/files/TrustedHosts
     - user: {{ dkim.lookup.user }}
     - group: {{ dkim.lookup.group }}
-    - mode: 644
+    - mode: 666
     - template: jinja
     - watch_in:
       - service: dkim_service
@@ -80,7 +80,7 @@ dkim_key_table:
     - source: salt://dkim/files/KeyTable
     - user: {{ dkim.lookup.user }}
     - group: {{ dkim.lookup.group }}
-    - mode: 644
+    - mode: 666
     - template: jinja
     - watch_in:
       - service: dkim_service
@@ -93,7 +93,7 @@ dkim_signing_table:
     - source: salt://dkim/files/SigningTable
     - user: {{ dkim.lookup.user }}
     - group: {{ dkim.lookup.group }}
-    - mode: 644
+    - mode: 666
     - template: jinja
     - watch_in:
       - service: dkim_service
