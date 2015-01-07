@@ -2,7 +2,10 @@
     'lookup': salt['grains.filter_by']({
         'Debian': {
             'package': 'roundcube',
-            'plugins': 'roundcube-plugins'
+            'plugins': 'roundcube-plugins',
+            'conf_dir': '/etc/roundcube',
+            'user': 'www-data',
+            'group': 'www-data'
         },
         'RedHat': {
             'package': 'todo'
