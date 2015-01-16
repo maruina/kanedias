@@ -2,7 +2,18 @@
     'lookup': salt['grains.filter_by']({
         'Debian': {
             'pkgs':{
-                'fpm': 'php5-fpm'
+                'fpm': 'php5-fpm',
+                'mysql': 'php5-mysql',
+                'gd': 'php5-gd',
+                'cli': 'php5-cli',
+                'mcrypt': 'php5-mcrypt',
+                'intl': 'php5-intl'
+            },
+            'fpm': {
+                'conf': '/etc/php5/fpm/php-fpm.conf',
+                'ini': '/etc/php5/fpm/php.ini',
+                'www': '/etc/php5/fpm/pool.d/www.conf',
+                'service': 'php5-fpm'
             },
         },
         'RedHat': {

@@ -4,9 +4,11 @@
             'package': 'nginx',
             'service': 'nginx',
             'webuser': 'www-data',
+            'conf_dir': '/etc/nginx',
             'conf_file': '/etc/nginx/nginx.conf',
-            'vhost_available': '/etc/nginx/conf.d',
-            'vhost_enabled': '/etc/nginx/conf.d',
+            'confd_dir': '/etc/nginx/conf.d',
+            'vhost_available': '/etc/nginx/sites-available',
+            'vhost_enabled': '/etc/nginx/sites-enabled',
             'vhost_use_symlink': False,
             'apache_utils': 'apache2-utils'
         },

@@ -8,4 +8,3 @@ php:
     group: nginx
   ini:
     cgi.fix_pathinfo: 0
-  mysql

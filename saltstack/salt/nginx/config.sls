@@ -2,7 +2,7 @@
 
 {% if 'nginx' in salt['pillar.get']('nginx:server:source') %}
   {% if not nginx.server.example_files %}
-    {% if salt['grains.get']('os') == 'CentOS' or salt['grains.get']('os_family') == 'Debian' %}
+    {% if salt['grains.get']('os') == 'CentOS' %}
 
 nginx_default_conf:
   file.absent:
@@ -11,14 +11,21 @@ nginx_default_conf:
 nginx_example_ssl_conf:
   file.absent:
     - name: {{ nginx.lookup.vhost_enabled }}/example_ssl.conf
+
+    {% elif salt['grains.get']('os_family') == 'Debian' %}
+
+nginx_default_conf:
+  file.absent:
+    - name: {{ nginx.lookup.vhost_enabled }}/default
+
     {% endif %}
-  {% endif %}
-{% else %}
+  {% else %}
 
 nginx_default_conf:
   file.absent:
     - name: {{ nginx.lookup.vhost_enabled }}/default.conf
 
+  {% endif %}
 {% endif %}
 
 {% for name, parameters in salt['pillar.get']('nginx:website').iteritems() %}
@@ -26,11 +33,13 @@ nginx_default_conf:
 
 {{ nginx_conf_id }}:
   file.managed:
-    - name: {{ nginx.lookup.vhost_enabled }}/{{ name }}.conf
+    - name: {{ nginx.lookup.confd_dir }}/{{ name }}.conf
     {% if parameters['type'] == 'php' %}
     - source: salt://nginx/files/php_host.conf
     {% elif parameters['type'] == 'python' %}
     - source: salt://nginx/files/python_host.conf
+    {% elif parameters['type'] == 'roundcube' %}
+    - source: salt://nginx/files/roundcube-{{ salt['grains.get']('os_family') }}.conf
     {% endif %}
     - user: root
     - group: root
@@ -40,6 +49,21 @@ nginx_default_conf:
       - service: nginx_service
     - context:
         parameters: {{ parameters }}
+
+  {% if parameters['type'] == 'roundcube' %}
+
+roundcude_fastcgi_params:
+  file.managed:
+    - name: {{ nginx.lookup.conf_dir }}/fastcgi_params
+    - source: salt://nginx/files/roundcube_fastcgi_params-{{ salt['grains.get']('os_family') }}
+    - user: root
+    - group: root
+    - mode: 644
+    - template: jinja
+    - watch_in:
+      - service: nginx_service
+
+  {% endif %}
 
   {% if 'htaccess' in parameters %}
     {% set htacc_file = 'htpwd_file_' ~ name %}

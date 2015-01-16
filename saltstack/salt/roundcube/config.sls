@@ -1,14 +1,9 @@
 {% from 'roundcube/map.jinja' import roundcube with context %}
 
-{% if salt['grains.get']('os') == 'Debian' %}
+{% if not salt['pillar.get']('roundcube:install') %}
 
-debian_db_php:
-  file.managed:
-    - name: {{ roundcube.lookup.conf_dir }}/debian-db.php
-    - source: salt://roundcube/files/debian-db.php
-    - user: {{ roundcube.lookup.user }}
-    - group: {{ roundcube.lookup.group }}
-    - mode: 644
-    - template: jinja
+roundcube_delete_install_dir:
+  file.absent:
+    - name: {{ pillar['roundcube']['root_dir'] }}/installer
 
 {% endif %}
