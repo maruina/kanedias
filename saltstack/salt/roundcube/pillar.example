@@ -1,13 +1,5 @@
 roundcube:
-  ssl_dir: /etc/ssl/example/dir
-  server_name: example.com
-  server_admin: joe@example.com
   root_dir: /var/www/roundcube
   user: nginx
   group: nginx
-  install: true|false
-  db:
-    user: roundcube
-    password: roundcube
-    database: roundcube
-    host: localhost
+  install: True|False
