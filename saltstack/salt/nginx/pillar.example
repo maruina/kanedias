@@ -9,12 +9,16 @@ nginx:
   website:
     mywordpress:
       type: php
+      socket: unix:/tmp/fpm-socket.sock
       server_name: www.mywordpress.com
       root_dir: /var/www/mywordpress
+      ssl: True|False
+      ssl_dir: /etc/ssl/archon_mta
       # Optional redirect from an old website
       redirect: www.olddomain.com
     myflask:
       type: python
+      socket: 127.0.0.1:9000
       server_name: www.myflaskapp.com
       python_dir: /var/www/mypythonapp
       # Python location for nginx. In this case will be www.myflaskapp.com/api

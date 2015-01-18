@@ -40,21 +40,6 @@ nginx_example_ssl_conf:
     - context:
         parameters: {{ parameters }}
 
-  {% if parameters['type'] == 'roundcube' %}
-
-roundcude_fastcgi_params:
-  file.managed:
-    - name: {{ nginx.lookup.conf_dir }}/fastcgi_params
-    - source: salt://nginx/files/roundcube_fastcgi_params-{{ salt['grains.get']('os_family') }}
-    - user: root
-    - group: root
-    - mode: 644
-    - template: jinja
-    - watch_in:
-      - service: nginx_service
-
-  {% endif %}
-
   {% if 'htaccess' in parameters %}
     {% set htacc_file = 'htpwd_file_' ~ name %}
     {% if parameters['htaccess']['enable'] %}
