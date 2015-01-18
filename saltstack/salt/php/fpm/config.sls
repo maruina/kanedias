@@ -11,13 +11,22 @@ php_ini_config:
     - watch_in:
       - service: {{ php.lookup.fpm.service }}
 
-php_fpm_confd_www_config:
+
+{% for pool, parameters in salt['pillar.get']('php:fpm').iteritems() %}
+  {% set pool_conf_id = 'fpm_pool_conf_' ~ pool %}
+
+{{ pool_conf_id }}:
   file.managed:
-    - name: {{ php.lookup.fpm.www }}
-    - source: salt://php/fpm/files/www.conf
+    - name: {{ php.lookup.fpm.pool_dir }}/{{ pool }}.conf
+    - source: salt://php/fpm/files/pool.conf
     - user: root
     - group: root
     - mode: 644
     - template: jinja
     - watch_in:
       - service: {{ php.lookup.fpm.service }}
+    - context:
+        pool: {{ pool }}
+        parameters: {{ parameters }}
+
+{% endfor %}

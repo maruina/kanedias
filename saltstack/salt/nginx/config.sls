@@ -2,30 +2,20 @@
 
 {% if 'nginx' in salt['pillar.get']('nginx:server:source') %}
   {% if not nginx.server.example_files %}
-    {% if salt['grains.get']('os') == 'CentOS' %}
 
 nginx_default_conf:
   file.absent:
-    - name: {{ nginx.lookup.vhost_enabled }}/default.conf
+    - name: {{ nginx.lookup.confd_dir }}/default.conf
 
 nginx_example_ssl_conf:
   file.absent:
-    - name: {{ nginx.lookup.vhost_enabled }}/example_ssl.conf
+    - name: {{ nginx.lookup.confd_dir }}/example_ssl.conf
 
-    {% elif salt['grains.get']('os_family') == 'Debian' %}
-
-nginx_default_conf:
-  file.absent:
-    - name: {{ nginx.lookup.vhost_enabled }}/default
-
-    {% endif %}
   {% else %}
-
-nginx_default_conf:
-  file.absent:
-    - name: {{ nginx.lookup.vhost_enabled }}/default.conf
-
+      {# Add rename of example files #}
   {% endif %}
+{% else %}
+    {# Handle nginx installed from official repository #}
 {% endif %}
 
 {% for name, parameters in salt['pillar.get']('nginx:website').iteritems() %}
