@@ -1,0 +1,5 @@
+postfixadmin:
+  root_dir: /var/www/postfixadmin
+  user: nginx
+  group: nginx
+  install: True|False

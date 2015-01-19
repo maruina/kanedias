@@ -1,10 +1,8 @@
-{% from 'roundcube/map.jinja' import roundcube with context %}
-
 roundcube_create_dir:
   file.directory:
-    - name: {{ pillar['roundcube']['root_dir'] }}
-    - user: {{ pillar['roundcube']['user'] }}
-    - group: {{ pillar['roundcube']['group'] }}
+    - name: {{ salt['pillar.get']('roundcube:root_dir') }}
+    - user: {{ salt['pillar.get']('roundcube:user') }}
+    - group: {{ salt['pillar.get']('roundcube:group') }}
     - dir_mode: 744
     - makedirs: True
     - recurse:
@@ -15,8 +13,8 @@ roundcube_create_dir:
 roundcube_create_log_dir:
   file.directory:
     - name: /var/log/roundcube
-    - user: {{ pillar['roundcube']['user'] }}
-    - group: {{ pillar['roundcube']['group'] }}
+    - user: {{ salt['pillar.get']('roundcube:user') }}
+    - group: {{ salt['pillar.get']('roundcube:group') }}
     - dir_mode: 744
     - makedirs: True
     - recurse:

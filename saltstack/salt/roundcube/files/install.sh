@@ -18,4 +18,6 @@ else
     tar -xf roundcubemail.tar --strip-components=1 -C {{ salt['pillar.get']('roundcube:root_dir') }}/
     chown -R {{ salt['pillar.get']('roundcube:user') }}:{{ salt['pillar.get']('roundcube:group') }} {{ salt['pillar.get']('roundcube:root_dir') }}
     chmod -R 744 {{ salt['pillar.get']('roundcube:root_dir') }}
+    cd {{ salt['pillar.get']('roundcube:root_dir') }}
+    curl -s http://getcomposer.org/installer | php
 fi
