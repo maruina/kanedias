@@ -2,7 +2,7 @@
 
 python_openssl_install:
   pkg.installed:
-    - name: python-openssl
+    - name: {{ openssl.lookup.python_openssl }}
 
 {% for name, parameters in salt['pillar.get']('openssl:ca').iteritems() %}
     {% if 'self-signed' in parameters['type'] %}

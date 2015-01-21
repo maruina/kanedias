@@ -18,6 +18,6 @@ gitlab_reconfigure:
 
 gitlab_redhat_lokkit:
     cmd.run:
-      - name: lokkit -s http -s ssh
+      - name: lokkit -s http -s ssh -s https
 
 {% endif %}
