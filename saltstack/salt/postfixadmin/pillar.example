@@ -2,4 +2,7 @@ postfixadmin:
   root_dir: /var/www/postfixadmin
   user: nginx
   group: nginx
-  install: True|False
+  # You have to set $CONF['configured'] = true; before the application will run!
+  # Doing this implies you have changed this file as required.
+  # i.e. configuring database etc; specifying setup.php password etc.
+  configured: true|false

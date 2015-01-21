@@ -1,0 +1,11 @@
+gitlab:
+  smtp:
+    server: mail.example.com
+    port: 587
+    username: joe
+    password: joepassword
+    domain: example.com
+    from_address: joe@example.com
+  web:
+    address: https://gitlab.example.com
+    hostname: gitlab.example.com

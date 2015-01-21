@@ -30,6 +30,8 @@ nginx_example_ssl_conf:
     - source: salt://nginx/files/python_host.conf
     {% elif parameters['type'] == 'roundcube' %}
     - source: salt://nginx/files/roundcube-{{ salt['grains.get']('os_family') }}.conf
+    {% elif parameters['type'] == 'postfixadmin' %}
+    - source: salt://nginx/files/postfixadmin-{{ salt['grains.get']('os_family') }}.conf
     {% endif %}
     - user: root
     - group: root
