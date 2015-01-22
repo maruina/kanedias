@@ -9,12 +9,16 @@ gitlab:
   web:
     address: https://gitlab.example.com
     hostname: gitlab.example.com
+    # Choose to use a self-signed certificate or a verified one like StartSSL
     ssl_type: self-signed|verified
+    # Set empty if you are using a verified crt
     cacert_path: /etc/ssl/example_gitlab
+    # Set empty if you are using a self-signed crt
     ssl_crt: |
     -----BEGIN CERTIFICATE-----
     ...
     -----END CERTIFICATE-----
+    # Set empty if you are using a self-signed key
     ssl_key: |
     -----BEGIN RSA PRIVATE KEY-----
     ...
