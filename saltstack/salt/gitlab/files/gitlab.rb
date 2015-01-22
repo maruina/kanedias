@@ -499,8 +499,7 @@ gitlab_rails['smtp_password'] = "{{ salt['pillar.get']('gitlab:smtp:password') }
 gitlab_rails['smtp_domain'] = "{{ salt['pillar.get']('gitlab:smtp:domain') }}"
 gitlab_rails['smtp_authentication'] = "login"
 gitlab_rails['smtp_enable_starttls_auto'] = true
-
-# gitlab_rails['gitlab_email_from'] = '{{ salt['pillar.get']('gitlab:smtp:from_address') }}'
+gitlab_rails['gitlab_email_from'] = '{{ salt['pillar.get']('gitlab:smtp:from_address') }}'
 
 # HTTPS support
 nginx['redirect_http_to_https'] = true

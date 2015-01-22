@@ -8,7 +8,9 @@
         'RedHat': {
             'package': 'https://downloads-packages.s3.amazonaws.com/centos-6.6/gitlab-7.6.2_omnibus.5.3.0.ci.1-1.el6.x86_64.rpm',
             'name': 'gitlab-7.6.2_omnibus.5.3.0.ci.1-1.el6.x86_64.rpm',
-            'conf_dir': '/etc/gitlab'
+            'conf_dir': '/etc/gitlab',
+            'openssh_server': 'openssh-server',
+            'cronie': 'cronie'
         },
     }, default='RedHat' )
 }, merge=True) %}
