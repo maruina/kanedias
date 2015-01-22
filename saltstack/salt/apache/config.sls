@@ -34,7 +34,6 @@ apache_example_ssl_conf_link:
     - name: {{ apache.lookup.sites_available }}/{{ name }}-ssl.conf
     {% if parameters['type'] == 'webmail' %}
     - source: salt://apache/files/default-ssl-{{ salt['grains.get']('os_family') }}
-
     {% endif %}
     - user: root
     - group: root

@@ -9,3 +9,4 @@ gitlab:
   web:
     address: https://gitlab.example.com
     hostname: gitlab.example.com
+    cacert_path: /etc/ssl/example_gitlab

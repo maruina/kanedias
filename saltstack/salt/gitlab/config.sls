@@ -1,10 +1,12 @@
-gitlab_ssl_create_dir:
-  file.directory:
-    - name: /etc/gitlab/ssl
+{% from 'gitlab/map.jinja' import gitlab with context %}
+
+gitlab_config:
+  file.managed:
+    - name: {{ gitlab.lookup.conf_dir }}/gitlab.rb
+    - source: salt://gitlab/files/gitlab.rb
     - user: root
     - group: root
-    - dir_mode: 700
-    - recurse:
-        - user
-        - group
-        - mode
+    - mode: 600
+    - template: jinja
+    - watch_in:
+      - cmd: gitlab_reconfigure

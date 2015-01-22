@@ -487,6 +487,9 @@ external_url '{{ salt['pillar.get']('gitlab:web:address') }}'
 # ci_nginx['enable'] = false
 
 
+###################
+#  Added by Salt  #
+###################
 # Use external SMTP account
 gitlab_rails['smtp_enable'] = true
 gitlab_rails['smtp_address'] = "{{ salt['pillar.get']('gitlab:smtp:server') }}"
@@ -497,7 +500,9 @@ gitlab_rails['smtp_domain'] = "{{ salt['pillar.get']('gitlab:smtp:domain') }}"
 gitlab_rails['smtp_authentication'] = "login"
 gitlab_rails['smtp_enable_starttls_auto'] = true
 
-gitlab_rails['gitlab_email_from'] = '{{ salt['pillar.get']('gitlab:smtp:from_address') }}'
+# gitlab_rails['gitlab_email_from'] = '{{ salt['pillar.get']('gitlab:smtp:from_address') }}'
 
 # HTTPS support
 nginx['redirect_http_to_https'] = true
+nginx['ssl_certificate'] = "{{ salt['pillar.get']('gitlab:web:cacert_path') }}/certs/{{ salt['pillar.get']('gitlab:web:hostname') }}.crt"
+nginx['ssl_certificate_key'] = "{{ salt['pillar.get']('gitlab:web:cacert_path') }}/certs/{{ salt['pillar.get']('gitlab:web:hostname') }}.key"
