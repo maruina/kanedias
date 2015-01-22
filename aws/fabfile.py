@@ -342,7 +342,10 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_nam
             instance_security_group.authorize(ip_protocol='tcp', from_port=995, to_port=995, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=25, to_port=25, cidr_ip='0.0.0.0/0')
             instance_security_group.authorize(ip_protocol='tcp', from_port=443, to_port=443, cidr_ip='0.0.0.0/0')
-        print('Security group {} [{}] created'.format(instance_security_group.id))
+        if 'GIT' in instance_tag.upper():
+            instance_security_group.authorize(ip_protocol='tcp', from_port=80, to_port=80, cidr_ip='0.0.0.0/0')
+            instance_security_group.authorize(ip_protocol='tcp', from_port=443, to_port=443, cidr_ip='0.0.0.0/0')
+        print('Security group {} [{}] created'.format(instance_security_group.tags['Name'], instance_security_group.id))
     else:
         # Use the secuirty group
         if len(security_groups) > 1:
@@ -352,7 +355,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_nam
             sys.exit(1)
         else:
             instance_security_group = security_groups[0]
-            print("Security group {} selected".format(instance_security_group.id))
+            print("Security group {} [{}] selected".format(instance_security_group.tags['Name'], instance_security_group.id))
 
     keys = [k for k in ec2_conn.get_all_key_pairs() if key_name in k.name]
     if not keys:
@@ -367,7 +370,6 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_nam
         instance_key = keys[0]
         print('Key {} selected'.format(instance_key.name))
 
-    # FIXME: count only running instance, change the filter
     # How many instance of this type already running?
     instances = ec2_conn.get_all_instances(filters={'tag:Name': instance_tag + '*', 'instance-state-name': 'running'})
     # Instance name: web.prd.001.eu-west-1a.example.com
@@ -438,7 +440,7 @@ def spin_instance(instance_tag, env_tag, subnet_id, key_name, security_group_nam
             sudo('echo ' + instance.private_ip_address + ' ' + instance_name + ' >> /etc/hosts')
 
     print(green("Instance {} spinned!".format(instance.id)))
-    return instance
+    return instance.id
 
 
 @task
