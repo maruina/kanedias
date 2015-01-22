@@ -25,7 +25,7 @@ salt_call=`command -v salt-call || true`
 wget=`command -v wget || true`
 if [ -z ${salt_call} ] || [ -z ${wget} ] ; then
     # Check user permissions for software installation
-    if [ ! -eq $UID 0 ] ; then
+    if [ `id -u` -ne 0 ] ; then
         # We are not root, check for sudo
         sudo=`command -v sudo || true`
         if [ -z ${sudo} ] ; then
