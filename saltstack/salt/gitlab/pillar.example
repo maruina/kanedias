@@ -9,4 +9,13 @@ gitlab:
   web:
     address: https://gitlab.example.com
     hostname: gitlab.example.com
+    ssl_type: self-signed|verified
     cacert_path: /etc/ssl/example_gitlab
+    ssl_crt: |
+    -----BEGIN CERTIFICATE-----
+    ...
+    -----END CERTIFICATE-----
+    ssl_key: |
+    -----BEGIN RSA PRIVATE KEY-----
+    ...
+    -----END RSA PRIVATE KEY-----

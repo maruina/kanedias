@@ -1,0 +1,1 @@
+{{ salt['pillar.get']('gitlab:web:ssl_crt') }}

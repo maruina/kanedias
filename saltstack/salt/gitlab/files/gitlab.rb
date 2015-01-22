@@ -503,5 +503,11 @@ gitlab_rails['gitlab_email_from'] = '{{ salt['pillar.get']('gitlab:smtp:from_add
 
 # HTTPS support
 nginx['redirect_http_to_https'] = true
+{% if 'self-signed' in salt['pillar.get']('gitlab:web:ssl_type') %}
 nginx['ssl_certificate'] = "{{ salt['pillar.get']('gitlab:web:cacert_path') }}/certs/{{ salt['pillar.get']('gitlab:web:hostname') }}.crt"
 nginx['ssl_certificate_key'] = "{{ salt['pillar.get']('gitlab:web:cacert_path') }}/certs/{{ salt['pillar.get']('gitlab:web:hostname') }}.key"
+{% elif 'verified' in salt['pillar.get']('gitlab:web:ssl_type') %}
+nginx['ssl_certificate'] = "{{ ssl_dir }}/{{ salt['pillar.get']('gitlab:web:hostname') }}.crt"
+nginx['ssl_certificate_key'] = "{{ ssl_dir }}/{{ salt['pillar.get']('gitlab:web:hostname') }}.key"
+{% else %}
+{% endif %}
