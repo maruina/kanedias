@@ -23,3 +23,5 @@ gitlab:
     -----BEGIN RSA PRIVATE KEY-----
     ...
     -----END RSA PRIVATE KEY-----
+  ci:
+    address: https://ci.example.com

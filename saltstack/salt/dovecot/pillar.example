@@ -10,6 +10,18 @@ dovecot:
     host: dbhost
   # Set disable_plaintext_auth = yes in 10-auth.conf
   ssl_only: true
-  # Path to the certificate directory
-  ssl_dir: /etc/ssl/archon_mta
+  # Choose to use a self-signed certificate or a verified one like StartSSL
+  ssl_type: self-signed|verified
+  # Set empty if you are using a verified crt
+  ssl_dir: /etc/ssl/example_gitlab
+  # Set empty if you are using a self-signed crt
+  ssl_crt: |
+    -----BEGIN CERTIFICATE-----
+    ...
+    -----END CERTIFICATE-----
+  # Set empty if you are using a self-signed key
+  ssl_key: |
+    -----BEGIN RSA PRIVATE KEY-----
+    ...
+    -----END RSA PRIVATE KEY-----
   db_backend: mysql

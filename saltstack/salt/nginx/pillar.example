@@ -13,7 +13,19 @@ nginx:
       server_name: www.mywordpress.com
       root_dir: /var/www/mywordpress
       ssl: True|False
-      ssl_dir: /etc/ssl/archon_mta
+      ssl_type: self-signed|verified
+      # Set empty if you are using a verified crt
+      ssl_dir: /etc/ssl/example_gitlab
+      # Set empty if you are using a self-signed crt
+      ssl_crt: |
+            -----BEGIN CERTIFICATE-----
+            ...
+            -----END CERTIFICATE-----
+      # Set empty if you are using a self-signed key
+      ssl_key: |
+            -----BEGIN RSA PRIVATE KEY-----
+            ...
+            -----END RSA PRIVATE KEY-----
       # Optional redirect from an old website
       redirect: www.olddomain.com
     myflask:

@@ -12,8 +12,18 @@ postconf -e smtpd_tls_auth_only=yes
 
 postconf -e smtpd_tls_security_level=may
 postconf -e smtpd_tls_auth_only=yes
+
+{% if 'self-signed' in salt['pillar.get']('postfix:ssl_type') %}
 postconf -e smtpd_tls_cert_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['pillar.get']('postfix:host') }}.crt
 postconf -e smtpd_tls_key_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['pillar.get']('postfix:host') }}.key
+{% elif 'verified' in salt['pillar.get']('postfix:ssl_type') %}
+postconf -e smtpd_tls_cert_file={{ ssl_dir }}/{{ salt['pillar.get']('postfix:host') }}.crt
+postconf -e smtpd_tls_key_file={{ ssl_dir }}/{{ salt['pillar.get']('postfix:host') }}.key
+postconf -e smtpd_tls_CAfile={{ ssl_dir }}/ca.crt
+postconf -e smtp_tls_CAfile="$smtpd_tls_CAfile"
+
+{% else %}
+{% endif %}
 
 postconf -e proxy_read_maps="\
 proxy:hash:/etc/postfix/helo_access,\

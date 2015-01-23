@@ -15,7 +15,7 @@ nginx_example_ssl_conf:
       {# Add rename of example files #}
   {% endif %}
 {% else %}
-    {# Handle nginx installed from official repository #}
+    {# Handle nginx installed from official distro repository #}
 {% endif %}
 
 {% for name, parameters in salt['pillar.get']('nginx:website').iteritems() %}

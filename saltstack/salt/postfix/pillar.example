@@ -1,7 +1,24 @@
 postfix:
   vmail_user: vmail
   vmail_group: vmail
-  ssl_dir: /etc/ssl/archon_mta
+  ssl_type: self-signed|verified
+  # Set empty if you are using a verified crt
+  ssl_dir: /etc/ssl/example_gitlab
+  # Set empty if you are using a self-signed crt
+  ssl_crt: |
+    -----BEGIN CERTIFICATE-----
+    ...
+    -----END CERTIFICATE-----
+  # Set empty if you are using a self-signed key
+  ssl_key: |
+    -----BEGIN RSA PRIVATE KEY-----
+    ...
+    -----END RSA PRIVATE KEY-----
+  # Set empty if you are using a self-signed key
+  ssl_ca: |
+    -----BEGIN CERTIFICATE-----
+    ...
+    -----END CERTIFICATE-----
   host: mail.example.com
   mail_domain: example.com
   public_ip: 123.456.789.123

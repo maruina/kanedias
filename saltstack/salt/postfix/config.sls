@@ -1,5 +1,39 @@
 {% from 'postfix/map.jinja' import postfix with context %}
 
+{% if 'verified' in salt['pillar.get']('postfix:ssl_type') %}
+
+postfix_create_key_dir:
+  file.directory:
+    - name: {{ postfix.lookup.conf_dir }}/ssl
+    - user: root
+    - group: root
+    - dir_mode: 700
+    - makedirs: True
+    - recurse:
+        - user
+        - group
+        - mode
+
+postfix_install_crt:
+  file.managed:
+    - name: {{ postfix.lookup.conf_dir }}/ssl/{{ salt['pillar.get']('postfix:host') }}.crt
+    - source: salt://postfix/files/ssl.crt
+    - user: root
+    - group: root
+    - mode: 600
+    - template: jinja
+
+postfix_install_key:
+  file.managed:
+    - name: {{ postfix.lookup.conf_dir }}/ssl/{{ salt['pillar.get']('postfix:host') }}.key
+    - source: salt://postfix/files/ssl.key
+    - user: root
+    - group: root
+    - mode: 600
+    - template: jinja
+
+{% endif %}
+
 mysql_virtual_mailbox_domains_conf:
   file.managed:
     - name: {{ postfix.lookup.conf_dir }}/mysql-virtual-mailbox-domains.cf
@@ -98,3 +132,5 @@ postfix_smtp_authentication:
     - user: root
     - group: root
     - template: jinja
+    - context:
+        ssl_dir: {{ postfix.lookup.conf_dir }}/ssl
