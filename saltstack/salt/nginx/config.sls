@@ -21,6 +21,41 @@ nginx_example_ssl_conf:
 {% for name, parameters in salt['pillar.get']('nginx:website').iteritems() %}
   {% set nginx_conf_id = 'nginx_conf_' ~ name %}
 
+  {% if 'verified' in parameters['ssl_type'] %}
+
+ngix_{{ nginx_conf_id }}_create_ssl_dir:
+  file.directory:
+    - name: {{ nginx.lookup.conf_dir }}/ssl
+    - user: root
+    - group: root
+    - dir_mode: 700
+    - makedirs: True
+    - recurse:
+        - user
+        - group
+        - mode
+
+ngix_{{ nginx_conf_id }}_install_crt:
+  file.managed:
+    - name: {{ nginx.lookup.conf_dir }}/ssl/{{ parameters['server_name'] }}.crt
+    - source: salt://nginx/files/ssl.crt
+    - user: root
+    - group: root
+    - mode: 600
+    - template: jinja
+
+ngix_{{ nginx_conf_id }}_install_key:
+  file.managed:
+    - name: {{ nginx.lookup.conf_dir }}/ssl/{{ parameters['server_name'] }}.key
+    - source: salt://nginx/files/ssl.key
+    - user: root
+    - group: root
+    - mode: 600
+    - template: jinja
+
+  {% endif %}
+
+
 {{ nginx_conf_id }}:
   file.managed:
     - name: {{ nginx.lookup.confd_dir }}/{{ name }}.conf
@@ -41,6 +76,7 @@ nginx_example_ssl_conf:
       - service: nginx_service
     - context:
         parameters: {{ parameters }}
+        conf_dir: {{ nginx.lookup.conf_dir }}
 
   {% if 'htaccess' in parameters %}
     {% set htacc_file = 'htpwd_file_' ~ name %}
