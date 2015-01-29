@@ -45,23 +45,28 @@ elif [ "${ostype}" = "debian" ] ; then
     fi
 fi
 
-source_dir="{{ salt['pillar.get']('asterisk:source_dir') }}"
+source_dir={{ salt['pillar.get']('asterisk:source_dir') }}
 
 # Check if I have the source
 if [ -f ${source_dir}/asterisk.tar ] ; then
     echo "Asterisk TAR found, skip download"
 else
     ${sudo} wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz -O ${source_dir}/asterisk.tar.gz
-    gzip -d ${source_dir}/asterisk.tar.gz
+    ${sudo} gzip -d ${source_dir}/asterisk.tar.gz
 fi
-
-#if test "$(ls -A "${dest_dir}")"; then
-#    echo "Roundcube alreay installed, skip installation"
-#else
-#    tar -xf asterisk.tar --strip-components=1 -C {{ salt['pillar.get']('roundcube:root_dir') }}/
-#    chown -R {{ salt['pillar.get']('roundcube:user') }}:{{ salt['pillar.get']('roundcube:group') }} {{ salt['pillar.get']('roundcube:root_dir') }}
-#    chmod -R 744 {{ salt['pillar.get']('roundcube:root_dir') }}
-#    cd {{ salt['pillar.get']('roundcube:root_dir') }}
-#    curl -s http://getcomposer.org/installer | php
-#fi
+if [ -d ${source_dir}/asterisk ] ; then
+    echo "Asterisk installed, skip installation"
+else
+    ${sudo} tar -xf ${source_dir}/asterisk.tar --strip-components=1 -C ${source_dir}/asterisk/
+    ${sudo} chown -R {{ user }}:{{ user }} ${source_dir}/asterisk
+    ${sudo} chmod -R 744 ${source_dir}/asterisk
+    cd ${source_dir}/asterisk
+    ${sudo} ./configure
+    ${sudo} make
+    ${sudo} make install
+    ${sudo} chown -R {{ user }}:{{ user }} /var/lib/asterisk/
+    ${sudo} chown -R {{ user }}:{{ user }} /var/spool/asterisk/
+    ${sudo} chown -R {{ user }}:{{ user }} /var/log/asterisk/
+    ${sudo} chown -R {{ user }}:{{ user }} /var/run/asterisk/
+fi
 

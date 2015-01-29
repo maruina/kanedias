@@ -7,14 +7,24 @@
             'gcc_cpp': 'g++',
             'make': 'make',
             'wget': 'wget',
+            'libxml2_devel': 'libxml2-dev',
+            'ncurses_devel': 'libncurses5-dev',
+            'openssl_devel': 'libssl-dev',
+            'libuuid_devel': 'uuid-dev',
+            'libjansson_devel': 'libjansson-dev',
+            'sqlite3_devel': 'libsqlite3-dev'
+        },
+        'RedHat': {
+            'package': 'asterisk',
+            'user': 'asteriskpbx',
+            'gcc': 'gcc',
+            'gcc_cpp': 'g++',
+            'make': 'make',
+            'wget': 'wget',
             'libxml2_devel': 'libxml2-devel',
             'ncurses_devel': 'ncurses-devel',
             'openssl_devel': 'openssl-devel',
             'libuuid_devl': 'libuuid-devel'
-        },
-        'RedHat': {
-            'package': 'asterisk',
-            'user': 'asteriskpbx'
         },
     }, default='RedHat' ),
 }, merge=True) %}

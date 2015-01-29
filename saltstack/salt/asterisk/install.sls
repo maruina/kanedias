@@ -13,7 +13,7 @@ asterisk_add_user:
 
 asterisk_create_dir:
   file.directory:
-    - name: {{ salt['pillar.get']('asterisk:source_dir') }}
+    - name: {{ salt['pillar.get']('asterisk:source_dir') }}/asterisk
     - user: {{ asterisk.lookup.user }}
     - group: {{ asterisk.lookup.user }}
     - dir_mode: 744
@@ -33,7 +33,9 @@ asterisk_install_prereq:
       - {{ asterisk.lookup.libxml2_devel }}
       - {{ asterisk.lookup.ncurses_devel }}
       - {{ asterisk.lookup.openssl_devel }}
-      - {{ asterisk.lookup.libuuid_devl }}
+      - {{ asterisk.lookup.libuuid_devel }}
+      - {{ asterisk.lookup.libjansson_devel }}
+      - {{ asterisk.lookup.sqlite3_devel }}
 
 asterisk_install:
   cmd.script:
@@ -42,3 +44,5 @@ asterisk_install:
     - user: root
     - group: root
     - template: jinja
+    - context:
+      user: {{ asterisk.lookup.user }}
