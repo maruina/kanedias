@@ -1,7 +1,16 @@
 {% set asterisk = salt['pillar.get']('asterisk', {
     'lookup': salt['grains.filter_by']({
         'Debian': {
-            'package': 'asterisk'
+            'package': 'asterisk',
+            'user': 'asteriskpbx',
+            'gcc': 'gcc',
+            'gcc_cpp': 'g++',
+            'make': 'make',
+            'wget': 'wget',
+            'libxml2_devel': 'libxml2-devel',
+            'ncurses_devel': 'ncurses-devel',
+            'openssl_devel': 'openssl-devel',
+            'libuuid_devl': 'libuuid-devel'
         },
         'RedHat': {
             'package': 'asterisk',
