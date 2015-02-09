@@ -7,6 +7,5 @@ asterisk_service:
   service.running:
     - name: {{ asterisk.lookup.service }}
     - enable: True
-    - reload: True
     - require:
       - sls: asterisk.install

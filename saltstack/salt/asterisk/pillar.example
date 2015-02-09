@@ -1,2 +1,24 @@
 asterisk:
   source_dir: /src/asterisk-complete
+  country: it
+  sip_config:
+    context: unauthenticated
+    allowguest: no
+    svrlookup: no
+    udpbindaddr: 0.0.0.0
+    tcpenable: no
+  sip_templates:
+    drone:
+      type: friend
+      context: LocalDrones
+      host: dynamic
+      nat: force_rport,comedia
+      dtmfmode: auto
+      disallow: all
+      allow: g722
+      allow: ulaw
+      allow: alaw
+  sip_devices:
+    drone_1:
+      template: drone
+      secret: ciao
