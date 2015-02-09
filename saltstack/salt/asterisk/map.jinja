@@ -2,7 +2,9 @@
     'lookup': salt['grains.filter_by']({
         'Debian': {
             'package': 'asterisk',
+            'conf_dir': '/etc/asterisk',
             'user': 'asteriskpbx',
+            'service': 'asterisk',
             'gcc': 'gcc',
             'gcc_cpp': 'g++',
             'make': 'make',
@@ -17,6 +19,8 @@
         'RedHat': {
             'package': 'asterisk',
             'user': 'asteriskpbx',
+            'service': 'asterisk',
+            'conf_dir': '/etc/asterisk',
             'gcc': 'gcc',
             'gcc_cpp': 'g++',
             'make': 'make',

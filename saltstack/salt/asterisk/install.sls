@@ -11,17 +11,17 @@ asterisk_add_user:
      - createhome: False
      - shell: /bin/false
 
-asterisk_create_dir:
-  file.directory:
-    - name: {{ salt['pillar.get']('asterisk:source_dir') }}/asterisk
-    - user: {{ asterisk.lookup.user }}
-    - group: {{ asterisk.lookup.user }}
-    - dir_mode: 744
-    - makedirs: True
-    - recurse:
-        - user
-        - group
-        - mode
+{#asterisk_create_dir:#}
+{#  file.directory:#}
+{#    - name: {{ salt['pillar.get']('asterisk:source_dir') }}#}
+{#    - user: {{ asterisk.lookup.user }}#}
+{#    - group: {{ asterisk.lookup.user }}#}
+{#    - dir_mode: 744#}
+{#    - makedirs: True#}
+{#    - recurse:#}
+{#        - user#}
+{#        - group#}
+{#        - mode#}
 
 asterisk_install_prereq:
   pkg.installed:
@@ -45,4 +45,4 @@ asterisk_install:
     - group: root
     - template: jinja
     - context:
-      user: {{ asterisk.lookup.user }}
+      username: {{ asterisk.lookup.user }}

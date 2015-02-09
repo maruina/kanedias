@@ -23,6 +23,8 @@ fi
 
 wget=`command -v wget || true`
 gzip=`command -v gzip || true`
+asterisk=`command -v asterisk || true`
+tar=`command -v tar || true`
 
 # Find the package manager and install what's needed
 if [ "${ostype}" = "redhat" ] ; then
@@ -34,6 +36,8 @@ if [ "${ostype}" = "redhat" ] ; then
     if [ -z ${gzip} ] ; then
         ${sudo} ${yum} install -y gzip
     fi
+    ${sudo} ${yum} install -y kernel-devel
+
 elif [ "${ostype}" = "debian" ] ; then
     apt_get=`command -v apt-get` || { echo "Fatal error: Debian-like OS detected, but apt-get could not be found." ; exit 1 ; }
 
@@ -43,30 +47,45 @@ elif [ "${ostype}" = "debian" ] ; then
     if [ -z ${gzip} ] ; then
         ${sudo} ${apt_get} install -y --no-install-recommends gzip
     fi
+    ${sudo} ${apt_get} install -y --no-install-recommends linux-headers-`uname -r`
+
 fi
 
 source_dir={{ salt['pillar.get']('asterisk:source_dir') }}
+mkdir -p ${source_dir}
 
-# Check if I have the source
-if [ -f ${source_dir}/asterisk.tar ] ; then
-    echo "Asterisk TAR found, skip download"
+if [ -z ${asterisk} ] ; then
+
+    echo 'Non ho il comando asterisk'
+
+    if [ -f ${source_dir}/asterisk.tar ] ; then
+        echo "Asterisk TAR found, skip download"
+    else
+        echo 'Non ho trovato il file tar e lo scarico'
+        ${sudo} ${wget} http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz -O ${source_dir}/asterisk.tar.gz
+        echo 'Ho scaricato il file'
+        ${sudo} ${gzip} -d ${source_dir}/asterisk.tar.gz
+    fi
+
+    if [ -d ${source_dir}/asterisk ] ; then
+        echo "Asterisk installed, skip installation"
+    else
+        mkdir ${source_dir}/asterisk
+        ${sudo} tar -xf ${source_dir}/asterisk.tar --strip-components=1 -C ${source_dir}/asterisk/
+        ${sudo} chown -R {{ username }}:{{ username }} ${source_dir}/asterisk
+        ${sudo} chmod -R 744 ${source_dir}/asterisk
+        cd ${source_dir}/asterisk
+        ${sudo} ./configure
+        ${sudo} make
+        ${sudo} make install
+        ${sudo} make config
+        ${sudo} chown -R {{ username }}:{{ username }} /var/lib/asterisk/
+        ${sudo} chown -R {{ username }}:{{ username }} /var/spool/asterisk/
+        ${sudo} chown -R {{ username }}:{{ username }} /var/log/asterisk/
+        ${sudo} chown -R {{ username }}:{{ username }} /var/run/asterisk/
+    fi
 else
-    ${sudo} wget http://downloads.asterisk.org/pub/telephony/asterisk/asterisk-13-current.tar.gz -O ${source_dir}/asterisk.tar.gz
-    ${sudo} gzip -d ${source_dir}/asterisk.tar.gz
+    echo "Asterisk already installed"
 fi
-if [ -d ${source_dir}/asterisk ] ; then
-    echo "Asterisk installed, skip installation"
-else
-    ${sudo} tar -xf ${source_dir}/asterisk.tar --strip-components=1 -C ${source_dir}/asterisk/
-    ${sudo} chown -R {{ user }}:{{ user }} ${source_dir}/asterisk
-    ${sudo} chmod -R 744 ${source_dir}/asterisk
-    cd ${source_dir}/asterisk
-    ${sudo} ./configure
-    ${sudo} make
-    ${sudo} make install
-    ${sudo} chown -R {{ user }}:{{ user }} /var/lib/asterisk/
-    ${sudo} chown -R {{ user }}:{{ user }} /var/spool/asterisk/
-    ${sudo} chown -R {{ user }}:{{ user }} /var/log/asterisk/
-    ${sudo} chown -R {{ user }}:{{ user }} /var/run/asterisk/
-fi
+
 

@@ -1,0 +1,10 @@
+;
+; Asterisk configuration file
+;
+; Module Loader configuration file
+;
+
+[modules]
+autoload=yes
+
+; Resource modules
