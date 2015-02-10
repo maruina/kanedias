@@ -23,7 +23,7 @@ nginx_example_ssl_conf:
 
   {% if 'verified' in parameters['ssl_type'] %}
 
-ngix_{{ nginx_conf_id }}_create_ssl_dir:
+nginx_{{ nginx_conf_id }}_create_ssl_dir:
   file.directory:
     - name: {{ nginx.lookup.conf_dir }}/ssl
     - user: root
@@ -35,7 +35,7 @@ ngix_{{ nginx_conf_id }}_create_ssl_dir:
         - group
         - mode
 
-ngix_{{ nginx_conf_id }}_install_crt:
+nginx_{{ nginx_conf_id }}_install_crt:
   file.managed:
     - name: {{ nginx.lookup.conf_dir }}/ssl/{{ parameters['server_name'] }}.crt
     - source: salt://nginx/files/ssl.crt
@@ -44,7 +44,7 @@ ngix_{{ nginx_conf_id }}_install_crt:
     - mode: 600
     - template: jinja
 
-ngix_{{ nginx_conf_id }}_install_key:
+nginx_{{ nginx_conf_id }}_install_key:
   file.managed:
     - name: {{ nginx.lookup.conf_dir }}/ssl/{{ parameters['server_name'] }}.key
     - source: salt://nginx/files/ssl.key

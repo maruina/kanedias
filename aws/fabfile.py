@@ -657,7 +657,7 @@ def update_salt_files(instance_id, dest_dir=None or '/srv', aws_id=None or AWS_I
         # rsync_project(remote_dir=dest_dir, local_dir=os.path.join(salt_files_folder, 'salt'))
         # rsync_project(remote_dir=dest_dir, local_dir=os.path.join(salt_files_folder, 'pillar'))
         put(local_path=os.path.join(salt_files_folder, 'salt'), remote_path=dest_dir, use_sudo=True)
-        put(local_path=os.path.join(salt_files_folder, 'pillar'), remote_path=dest_dir, use_sudo=True)
+        put(local_path=os.path.join('/Users/ruio/Archon', 'pillar'), remote_path=dest_dir, use_sudo=True)
         sudo("salt '*' saltutil.refresh_pillar")
 
     print(green("Salt files updated"))
