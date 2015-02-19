@@ -1,0 +1,12 @@
+{% set locale = salt['pillar.get']('locale', {
+    'lookup': salt['grains.filter_by']({
+        'Debian': {
+            'conf': '/etc/default/locale',
+            'profile_dir': '/etc/profile.d'
+        },
+        'RedHat': {
+            'conf': 'todo',
+            'profile_dir': 'todo'
+        },
+    }, default='RedHat' )
+}, merge=True) %}

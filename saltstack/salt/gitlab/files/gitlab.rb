@@ -377,7 +377,7 @@ external_url '{{ salt['pillar.get']('gitlab:web:address') }}'
 ############################################
 ## see https://gitlab.com/gitlab-org/omnibus-gitlab/tree/629def0a7a26e7c2326566f0758d4a27857b52a3/doc/gitlab-ci/README.md
 
-ci_external_url '{{ salt['pillar.get']('gitlab:ci:address') }}'
+# ci_external_url '{{ salt['pillar.get']('gitlab:ci:address') }}'
 
 
 #################################

@@ -1,17 +1,20 @@
 #!/bin/sh
+postconf -e broken_sasl_auth_clients=yes
 
 postconf -e smtpd_sasl_type=dovecot
 postconf -e smtpd_sasl_path=private/auth
 postconf -e smtpd_sasl_auth_enable=yes
-postconf -e broken_sasl_auth_clients=yes
 postconf -e smtpd_sasl_security_options="noanonymous, noplaintext"
 postconf -e smtpd_sasl_authenticated_header=no
-
 postconf -e smtpd_sasl_tls_security_options=noanonymous
-postconf -e smtpd_tls_auth_only=yes
 
-postconf -e smtpd_tls_security_level=may
 postconf -e smtpd_tls_auth_only=yes
+postconf -e smtpd_tls_security_level=may
+postconf -e smtpd_tls_received_header=yes
+postconf -e smtpd_tls_loglevel=1
+
+postconf -e smtp_tls_security_level=may
+postconf -e smtp_tls_loglevel=1
 
 {% if 'self-signed' in salt['pillar.get']('postfix:ssl_type') %}
 postconf -e smtpd_tls_cert_file={{ salt['pillar.get']('postfix:ssl_dir') }}/certs/{{ salt['pillar.get']('postfix:host') }}.crt

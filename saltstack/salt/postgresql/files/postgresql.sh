@@ -1,2 +1,2 @@
 #!/bin/sh
-PATH=$PATH:/usr/pgsql-9.3/bin
+PATH=$PATH:/usr/lib/postgresql/9.4/bin/
